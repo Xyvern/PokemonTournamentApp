@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Card extends Model
 {
@@ -34,4 +35,11 @@ class Card extends Model
     public function pokedexNumbers() { return $this->hasMany(CardPokedexNumber::class); }
     public function legalities() { return $this->hasMany(CardLegality::class); }
     public function images() { return $this->hasOne(CardImage::class); }
+    public function rules() { return $this->hasMany(CardRule::class); }
+    
+    public function globalDecks(): BelongsToMany
+    {
+        return $this->belongsToMany(GlobalDeck::class, 'deck_contents', 'card_id', 'global_deck_id')
+                    ->withPivot('quantity');
+    }
 }

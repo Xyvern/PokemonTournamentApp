@@ -35,4 +35,9 @@ class User extends Authenticatable
     public $timestamps = true;
 
     protected $dates = ['deleted_at'];
+
+    public function decks()
+    {
+        return $this->hasMany(Deck::class);
+    }
 }

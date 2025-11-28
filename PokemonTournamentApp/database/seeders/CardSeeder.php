@@ -3,28 +3,33 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\{
-    Set,
-    Card,
-    CardSubtype,
-    CardType,
-    CardAbility,
-    CardAttack,
-    CardAttackCost,
-    CardWeakness,
-    CardRetreatCost,
-    CardPokedexNumber,
-    CardLegality,
-    CardImage
-};
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
+use App\Models\Set;
+use App\Models\Card;
+use App\Models\CardSubtype;
+use App\Models\CardType;
+use App\Models\CardAbility;
+use App\Models\CardAttack;
+use App\Models\CardAttackCost;
+use App\Models\CardWeakness;
+use App\Models\CardRetreatCost;
+use App\Models\CardPokedexNumber;
+use App\Models\CardLegality;
+use App\Models\CardImage;
+use App\Models\CardRule; // <--- Added Import
 
 class CardSeeder extends Seeder
 {
     public function run(): void
     {
         $path = public_path('data/cards');
+        // Ensure the directory exists before scanning
+        if (!File::exists($path)) {
+            $this->command->warn("Directory not found: $path");
+            return;
+        }
+
         $files = File::files($path);
 
         foreach ($files as $file) {
@@ -74,6 +79,15 @@ class CardSeeder extends Seeder
                         CardType::create([
                             'card_id' => $card->id,
                             'type' => $type,
+                        ]);
+                    }
+
+                    // --- Rules (ADDED) ---
+                    // This handles the "rules" array from the JSON (usually for Trainer cards)
+                    foreach ($cardData['rules'] ?? [] as $ruleText) {
+                        CardRule::create([
+                            'card_id' => $card->id,
+                            'text' => $ruleText,
                         ]);
                     }
 

@@ -2113,7 +2113,6 @@
     "total": 304,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "PR-SW",
@@ -2400,7 +2399,6 @@
     "total": 186,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "BRS",
@@ -2419,7 +2417,6 @@
     "total": 30,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "BRS",
@@ -2438,7 +2435,6 @@
     "total": 216,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "ASR",
@@ -2457,7 +2453,6 @@
     "total": 30,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "ASR",
@@ -2476,7 +2471,6 @@
     "total": 88,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "PGO",
@@ -2495,8 +2489,7 @@
     "total": 15,
     "legalities": {
       "unlimited": "Legal",
-      "expanded": "Legal",
-      "standard": "Legal"
+      "expanded": "Legal"
     },
     "releaseDate": "2022/08/03",
     "updatedAt": "2022/10/09 13:21:00",
@@ -2513,7 +2506,6 @@
     "total": 217,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "LOR",
@@ -2532,7 +2524,6 @@
     "total": 30,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "LOR",
@@ -2551,7 +2542,6 @@
     "total": 215,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "SIT",
@@ -2570,7 +2560,6 @@
     "total": 30,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "SIT",
@@ -2589,7 +2578,6 @@
     "total": 160,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "CRZ",
@@ -2608,7 +2596,6 @@
     "total": 70,
     "legalities": {
       "unlimited": "Legal",
-      "standard": "Legal",
       "expanded": "Legal"
     },
     "ptcgoCode": "CRZ",
