@@ -96,75 +96,31 @@
         @endif
         <h2 style="margin-top: 2vh">Top Decks</h2>
         <div style="margin-top: 2vh;" class="row">
-            <div class="col">
-                <div class="card shadow-sm" style="background-color: #eeeeee">
-                    <div class="row g-0 align-items-center">
-                        <!-- Image -->
-                        <div class="col-auto">
-                            <img src="https://images.pokemontcg.io/g1/1.png" 
-                                alt="Dragapult ex" 
-                                style="height: 20vh; width: auto; object-fit: contain; border-radius: 8px; margin: 8px;">
-                        </div>
-    
-                        <!-- Content -->
-                        <div class="col" style="height: 20vh;">
-                            <div class="card-body" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-                                <h5 class="card-title mb-2" style="font-weight:600; font-size: 2.25rem;">Dragapult ex</h5>
-                                <div>
-                                    <p class="card-text mb-1" style="font-size: 1.25rem;">1000 times played</p>
-                                    <p class="card-text text-muted" style="font-size: 1rem;">60% win rate</p>
+            @foreach ($archetypes as $archetype)
+                <div class="col-3">
+                    <div class="card shadow-sm" style="background-color: #eeeeee">
+                        <div class="row g-0 align-items-center">
+                            <!-- Image -->
+                            <div class="col-auto">
+                                <img src="{{ $archetype->keyCard->images->small }}" 
+                                    alt="Dragapult ex" 
+                                    style="height: 20vh; width: auto; object-fit: contain; border-radius: 8px; margin: 8px;">
+                            </div>
+        
+                            <!-- Content -->
+                            <div class="col" style="height: 20vh;">
+                                <div class="card-body" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                                    <h5 class="card-title mb-2" style="font-weight:600; font-size: 1.5rem;">{{ $archetype->name }}</h5>
+                                    <div>
+                                        <p class="card-text mb-1" style="font-size: 1.25rem;">1000 times played</p>
+                                        <p class="card-text text-muted" style="font-size: 1rem;">60% win rate</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col">
-                <div class="card shadow-sm" style="background-color: #eeeeee">
-                    <div class="row g-0 align-items-center">
-                        <!-- Image -->
-                        <div class="col-auto">
-                            <img src="https://images.pokemontcg.io/g1/1.png" 
-                                alt="Dragapult ex" 
-                                style="height: 20vh; width: auto; object-fit: contain; border-radius: 8px; margin: 8px;">
-                        </div>
-    
-                        <!-- Content -->
-                        <div class="col" style="height: 20vh;">
-                            <div class="card-body" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-                                <h5 class="card-title mb-2" style="font-weight:600; font-size: 2.25rem;">Dragapult ex</h5>
-                                <div>
-                                    <p class="card-text mb-1" style="font-size: 1.25rem;">1000 times played</p>
-                                    <p class="card-text text-muted" style="font-size: 1rem;">60% win rate</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card shadow-sm" style="background-color: #eeeeee">
-                    <div class="row g-0 align-items-center">
-                        <!-- Image -->
-                        <div class="col-auto">
-                            <img src="https://images.pokemontcg.io/g1/1.png" 
-                                alt="Dragapult ex" 
-                                style="height: 20vh; width: auto; object-fit: contain; border-radius: 8px; margin: 8px;">
-                        </div>
-    
-                        <!-- Content -->
-                        <div class="col" style="height: 20vh;">
-                            <div class="card-body" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-                                <h5 class="card-title mb-2" style="font-weight:600; font-size: 2.25rem;">Dragapult ex</h5>
-                                <div>
-                                    <p class="card-text mb-1" style="font-size: 1.25rem;">1000 times played</p>
-                                    <p class="card-text text-muted" style="font-size: 1rem;">60% win rate</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @endforeach
         </div>
         <h2 style="margin-top: 2vh">Upcoming Tournaments</h2>
         @if ($tournaments->isEmpty())
@@ -207,14 +163,16 @@
                 @foreach ($sets as $set)
                     <div class="col" style="display: flex; justify-content: center;">
                         <div class="card" style="width: 100%;">
-                            <div style="height: 150px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 1vh;">
-                                <img src="{{ $set->images->logo }}" 
-                                    alt="{{ $set->name }}" 
-                                    style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                            </div>
-                            <div class="card-body text-center" style="width: 100%;">
-                                <h5 class="card-title" style="font-weight: 500;">{{ $set->name }} ({{ $set->total }} cards)</h5>
-                            </div>
+                            <a href=" {{ route('sets.detail', $set->id) }}" style="text-decoration: none; color: inherit;">
+                                <div style="height: 150px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 1vh;">
+                                    <img src="{{ $set->images->logo }}" 
+                                        alt="{{ $set->name }}" 
+                                        style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                </div>
+                                <div class="card-body text-center" style="width: 100%;">
+                                    <h5 class="card-title" style="font-weight: 500;">{{ $set->name }} ({{ $set->total }} cards)</h5>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 @endforeach

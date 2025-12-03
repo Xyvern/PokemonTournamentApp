@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Archetype;
 use App\Models\Card;
 use App\Models\Deck;
 use App\Models\GlobalDeck;
@@ -15,8 +16,9 @@ class PlayerSiteController extends Controller
 {
     public function playerHome()
     {
+        $archetypes = Archetype::all();
         $sets = Set::orderBy('release_date', 'desc')->take(4)->get();
-        return view('player.home', compact('sets'));
+        return view('player.home', compact('sets', 'archetypes'));
     }
 
     public function leaderboard()
