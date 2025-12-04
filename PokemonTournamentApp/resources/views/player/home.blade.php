@@ -122,38 +122,83 @@
                 </div>
             @endforeach
         </div>
-        <h2 style="margin-top: 2vh">Upcoming Tournaments</h2>
-        @if ($tournaments->isEmpty())
-            <p>No upcoming tournaments found.</p>
-        @else
-            <p style="text-align: end; ">See more tournaments</p>
-            <div class="row">
-                @foreach ($tournaments as $item)
-                    <div class="col-3">
-                        <a href="#" style="text-decoration: none; color: inherit;">
-                        {{-- <a href="{{ route('player.tournamentDetail', $item->tournamentID) }}" style="text-decoration: none; color: inherit;"> --}}
-                            <div class="info-box">
-                                <!-- Left side: Big date -->
-                                <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem;">
-                                    <span style="font-size: 2rem; font-weight: bold;">{{ $item->capacity }}</span>
-                                    <span style="font-size: 1rem;">Players</span>
-                                </span>
-
-                                <!-- Right side: Details -->
-                                <div class="info-box-content" style="justify-content: space-between;">
-                                    <span class="info-box-text" style="font-weight: bold; font-size: 1.25rem;">{{ $item->name }}</span>
-                                    <span class="info-box-number" style="font-weight: 500; font-size: 1rem;">
-                                        <p style="margin: 0; padding:0;">Date: {{ $item->date->format('l, d F Y, H:i') }}</p>
-                                        <p style="margin: 0; padding:0;">Registered: {{ $item->number_of_players }}/{{ $item->capacity }} players</p>
-                                        <p style="margin: 0; padding:0;">Format: {{ $item->format }}</p>
+        {{-- ------------------ --}}
+        <div class="row">
+            <!-- LEFT COLUMN: Recent Tournaments -->
+            <div class="col-md-6">
+                <h2 style="margin-top: 2vh; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">Recent Tournaments</h2>
+                
+                @if ($recentTournaments->isEmpty())
+                    <div class="alert alert-light">No recent tournaments found.</div>
+                @else
+                    <div class="d-flex flex-column gap-3">
+                        @foreach ($recentTournaments->take(3) as $item)
+                            <a href="#" style="text-decoration: none; color: inherit;">
+                            {{-- <a href="{{ route('player.tournamentDetail', $item->tournamentID) }}" style="text-decoration: none; color: inherit;"> --}}
+                                <div class="info-box shadow-sm mb-3">
+                                    <!-- Left side: Big date/Capacity -->
+                                    <span class="info-box-icon bg-secondary d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem; min-width: 80px;">
+                                        <span style="font-size: 1.5rem; font-weight: bold;">{{ $item->capacity }}</span>
+                                        <span style="font-size: 0.8rem;">Max</span>
                                     </span>
+
+                                    <!-- Right side: Details -->
+                                    <div class="info-box-content p-2">
+                                        <span class="info-box-text" style="font-weight: bold; font-size: 1.1rem;">{{ $item->name }}</span>
+                                        <div class="info-box-number text-muted" style="font-weight: 500; font-size: 0.9rem;">
+                                            <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ $item->start_date instanceof \DateTime ? $item->start_date->format('d M Y') : $item->start_date }}</p>
+                                            <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
+                            </a>
+                        @endforeach
                     </div>
-                @endforeach
+                    
+                    <div class="text-right mt-2">
+                        <a href="#" class="btn btn-sm btn-outline-secondary">See all recent tournaments &rarr;</a>
+                    </div>
+                @endif
             </div>
-        @endif
+
+            <!-- RIGHT COLUMN: Upcoming Tournaments -->
+            <div class="col-md-6">
+                <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Upcoming Tournaments</h2>
+
+                @if ($upcomingTournaments->isEmpty())
+                    <div class="alert alert-light">No upcoming tournaments found.</div>
+                @else
+                    <div class="d-flex flex-column gap-3">
+                        @foreach ($upcomingTournaments->take(3) as $item)
+                            <a href="#" style="text-decoration: none; color: inherit;">
+                            {{-- <a href="{{ route('player.tournamentDetail', $item->tournamentID) }}" style="text-decoration: none; color: inherit;"> --}}
+                                <div class="info-box shadow-sm mb-3">
+                                    <!-- Left side: Big date/Capacity -->
+                                    <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem; min-width: 80px;">
+                                        <span style="font-size: 1.5rem; font-weight: bold;">{{ $item->capacity }}</span>
+                                        <span style="font-size: 0.8rem;">Max</span>
+                                    </span>
+
+                                    <!-- Right side: Details -->
+                                    <div class="info-box-content p-2">
+                                        <span class="info-box-text" style="font-weight: bold; font-size: 1.1rem;">{{ $item->name }}</span>
+                                        <div class="info-box-number text-muted" style="font-weight: 500; font-size: 0.9rem;">
+                                            <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ $item->start_date instanceof \DateTime ? $item->start_date->format('d M Y') : $item->start_date }}</p>
+                                            <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    <div class="text-right mt-2">
+                        <a href="#" class="btn btn-sm btn-outline-info">See all upcoming tournaments &rarr;</a>
+                    </div>
+                @endif
+            </div>
+        </div>
+        {{-- ---------------------------------- --}}
         <h2 style="margin-top: 2vh">Recent sets</h2>
         @if ($sets->isEmpty())
             <p>No recent sets found.</p>

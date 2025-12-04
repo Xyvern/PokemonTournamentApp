@@ -7,6 +7,7 @@ use App\Models\Card;
 use App\Models\Deck;
 use App\Models\GlobalDeck;
 use App\Models\Set;
+use App\Models\Tournament;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,43 @@ class PlayerSiteController extends Controller
     {
         $archetypes = Archetype::all();
         $sets = Set::orderBy('release_date', 'desc')->take(4)->get();
-        return view('player.home', compact('sets', 'archetypes'));
+        $recentTournaments = Tournament::where('status', 'completed')
+            ->orderBy('start_date', 'desc')
+            ->take(3)
+            ->get();
+
+        // 2. Query for Upcoming Tournaments (Registration or Active)
+        // Ordered by soonest start_date first
+        $upcomingTournaments = Tournament::whereIn('status', ['registration', 'active'])
+            ->orderBy('start_date', 'asc')
+            ->take(3)
+            ->get();
+
+        // 3. DUMMY DATA GENERATOR (For visual testing if DB is empty)
+        // This ensures your Blade doesn't error or show empty states while developing.
+        if ($upcomingTournaments->isEmpty()) {
+            $upcomingTournaments = collect([
+                (object)[
+                    'id' => 999,
+                    'name' => 'Weekly Cup (Dummy)',
+                    'capacity' => 64,
+                    'registered_player' => 12,
+                    'start_date' => now()->addDays(2), // 2 days from now
+                    'status' => 'registration',
+                    'format' => 'Standard'
+                ],
+                (object)[
+                    'id' => 1000,
+                    'name' => 'Championship (Dummy)',
+                    'capacity' => 128,
+                    'registered_player' => 45,
+                    'start_date' => now()->addDays(5),
+                    'status' => 'registration',
+                    'format' => 'Standard'
+                ]
+            ]);
+        }
+        return view('player.home', compact('sets', 'archetypes', 'recentTournaments', 'upcomingTournaments'));
     }
 
     public function leaderboard()

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('matches', function (Blueprint $table) {
+        Schema::create('tournament_matches', function (Blueprint $table) {
             $table->id();
             
             $table->foreignId('tournament_id')->constrained()->cascadeOnDelete();
@@ -31,10 +31,7 @@ return new class extends Migration
             // Results
             // null = not played yet, 1 = P1 Win, 2 = P2 Win, 3 = Tie/Draw
             $table->tinyInteger('result_code')->nullable(); 
-            
-            // Optional: Table number
-            $table->integer('table_number')->nullable();
-
+        
             $table->timestamps();
         });
     }
