@@ -195,7 +195,7 @@
                 @if(isset($myEntry))
                     <div class="card mb-4 bg-light border-info">
                         <div class="card-body">
-                            <h5 class="card-title text-info">Your Performance</h5>
+                            <h5 class="card-title text-info">My Performance</h5>
                             <br>
                             <hr>
                             <div class="d-flex justify-content-between mb-3">
@@ -259,7 +259,7 @@
                                             <div>
                                                 <span class="font-weight-bold text-dark">Round {{ $match->round_number }}</span>
                                                 <div class="small text-muted">
-                                                    vs {{ $opponent ? $opponent->user->nickname : 'Bye' }}
+                                                    vs {{ $opponent ? $opponent->user->nickname : 'Bye' }} ({{ $match->elo_gain }})
                                                 </div>
                                             </div>
                                             <div class="text-right">
