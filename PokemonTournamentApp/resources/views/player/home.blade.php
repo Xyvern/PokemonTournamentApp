@@ -70,8 +70,7 @@
             <div class="row" style="margin-top: 2vh;">
                 @foreach ($registeredTournaments as $item)
                     <div class="col-3">
-                        <a href="#" style="text-decoration: none; color: inherit;">
-                        {{-- <a href="{{ route('player.tournamentDetail', $item->tournamentID) }}" style="text-decoration: none; color: inherit;"> --}}
+                        <a href="{{ route('tournaments.detail', ['id' => $item->tournamentID]) }}" style="text-decoration: none; color: inherit;">
                             <div class="info-box">
                                 <!-- Left side: Big date -->
                                 <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem;">
@@ -94,7 +93,7 @@
                 @endforeach
             </div>
         @endif
-        <h2 style="margin-top: 2vh">Top Decks</h2>
+        <h2 style="margin-top: 2vh">Top Archetypes</h2>
         <div style="margin-top: 2vh;" class="row">
             @foreach ($archetypes as $archetype)
                 <div class="col-3">
@@ -112,8 +111,8 @@
                                 <div class="card-body" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
                                     <h5 class="card-title mb-2" style="font-weight:600; font-size: 1.5rem;">{{ $archetype->name }}</h5>
                                     <div>
-                                        <p class="card-text mb-1" style="font-size: 1.25rem;">1000 times played</p>
-                                        <p class="card-text text-muted" style="font-size: 1rem;">60% win rate</p>
+                                        <p class="card-text mb-1" style="font-size: 1.25rem;">{{ $archetype->times_played }} times played</p>
+                                        <p class="card-text text-muted" style="font-size: 1rem;">{{ $archetype->win_rate }}% win rate</p>
                                     </div>
                                 </div>
                             </div>
@@ -133,8 +132,7 @@
                 @else
                     <div class="d-flex flex-column gap-3">
                         @foreach ($recentTournaments->take(3) as $item)
-                            <a href="#" style="text-decoration: none; color: inherit;">
-                            {{-- <a href="{{ route('player.tournamentDetail', $item->tournamentID) }}" style="text-decoration: none; color: inherit;"> --}}
+                            <a href="{{ route('tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
                                 <div class="info-box shadow-sm mb-3">
                                     <!-- Left side: Big date/Capacity -->
                                     <span class="info-box-icon bg-secondary d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem; min-width: 80px;">
@@ -156,7 +154,7 @@
                     </div>
                     
                     <div class="text-right mt-2">
-                        <a href="#" class="btn btn-sm btn-outline-secondary">See all recent tournaments &rarr;</a>
+                        <a href="{{ route('tournaments.index') }}" class="btn btn-sm btn-outline-secondary">See all recent tournaments &rarr;</a>
                     </div>
                 @endif
             </div>
@@ -170,8 +168,7 @@
                 @else
                     <div class="d-flex flex-column gap-3">
                         @foreach ($upcomingTournaments->take(3) as $item)
-                            <a href="#" style="text-decoration: none; color: inherit;">
-                            {{-- <a href="{{ route('player.tournamentDetail', $item->tournamentID) }}" style="text-decoration: none; color: inherit;"> --}}
+                            <a href="{{ route('tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
                                 <div class="info-box shadow-sm mb-3">
                                     <!-- Left side: Big date/Capacity -->
                                     <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem; min-width: 80px;">
@@ -193,7 +190,7 @@
                     </div>
 
                     <div class="text-right mt-2">
-                        <a href="#" class="btn btn-sm btn-outline-info">See all upcoming tournaments &rarr;</a>
+                        <a href="{{ route('tournaments.index') }}" class="btn btn-sm btn-outline-info">See all upcoming tournaments &rarr;</a>
                     </div>
                 @endif
             </div>

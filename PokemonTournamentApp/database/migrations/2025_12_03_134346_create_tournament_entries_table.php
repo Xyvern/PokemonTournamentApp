@@ -34,7 +34,7 @@ return new class extends Migration
             $table->decimal('omw_percentage', 5, 2)->default(0.00);
             // OOMW% (Opponent's Opponent Match Win Percentage) - Secondary Tie Breaker
             $table->decimal('oomw_percentage', 5, 2)->default(0.00);
-
+            $table->integer('total_elo_gain')->default(0);
             $table->timestamps();
             // A user can only enter a tournament once
             $table->unique(['tournament_id', 'user_id']);

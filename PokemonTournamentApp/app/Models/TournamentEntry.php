@@ -18,6 +18,7 @@ class TournamentEntry extends Model
         'ties', 
         'omw_percentage', 
         'oomw_percentage',
+        'total_elo_gain',
     ];
 
     public function user(): BelongsTo

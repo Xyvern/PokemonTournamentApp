@@ -16,6 +16,7 @@ class TournamentMatch extends Model
         'player1_entry_id',
         'player2_entry_id',
         'result_code',
+        'elo_gain',
     ];
 
     protected $casts = [

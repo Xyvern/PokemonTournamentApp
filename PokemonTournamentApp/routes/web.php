@@ -24,13 +24,19 @@ Route::prefix('sets')->name('sets.')->group(function () {
 
 // todo
 Route::prefix('tournaments')->name('tournaments.')->group(function () {
-    Route::get('/', [PlayerSiteController::class, 'playerTournaments'])->name('index');
-    Route::get('/{id}', [PlayerSiteController::class, 'playerTournamentDetail'])->name('detail');
+    Route::get('/', [SiteController::class, 'tournaments'])->name('index');
+    Route::get('/{id}', [SiteController::class, 'tournamentDetail'])->name('detail');
 });
 
 Route::prefix('cards')->name('cards.')->group(function () {
     Route::get('/', [SiteController::class, 'cards'])->name('index');
     Route::get('/{id}', [SiteController::class, 'cardDetail'])->name('detail');
+});
+
+Route::prefix('archetypes')->name('archetypes.')->group(function () {
+    Route::get('/', [SiteController::class, 'archetypes'])->name('index');
+    Route::get('/{id}', [SiteController::class, 'archetypeDetail'])->name('detail');
+    Route::get('/{id}/{deckId}', [SiteController::class, 'archetypeDeck'])->name('deck');
 });
 
 Route::prefix('player')->name('player.')->group(function () {

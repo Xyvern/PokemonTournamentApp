@@ -31,7 +31,7 @@ return new class extends Migration
             // Results
             // null = not played yet, 1 = P1 Win, 2 = P2 Win, 3 = Tie/Draw
             $table->tinyInteger('result_code')->nullable(); 
-        
+            $table->integer('elo_gain')->default(0);
             $table->timestamps();
         });
     }

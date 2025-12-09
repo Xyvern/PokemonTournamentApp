@@ -15,7 +15,7 @@ class Tournament extends Model
 
     public function entries(): HasMany
     {
-        return $this->hasMany(TournamentEntry::class)->orderBy('points', 'desc');
+        return $this->hasMany(TournamentEntry::class)->orderBy('rank', 'asc');
     }
 
     public function matches(): HasMany

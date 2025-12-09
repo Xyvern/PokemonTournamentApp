@@ -37,20 +37,22 @@
                 @foreach($cards as $card)
                     <div class="col card-entry">
                         <div class="card h-100 border-0 shadow-sm card-hover">
-                            <div class="card-body p-2 d-flex align-items-center justify-content-center bg-light rounded-3">
-                                <img 
-                                    src="{{ $card->images->small }}" 
-                                    alt="{{ $card->name }}" 
-                                    class="img-fluid rounded-2"
-                                    loading="lazy"
-                                    style="max-height: 250px; object-fit: contain;"
-                                >
-                            </div>
-                            <div class="card-footer bg-white border-0 text-center py-2">
-                                <small class="text-truncate d-block fw-bold text-dark">
-                                    {{ $card->name }}
-                                </small>
-                            </div>
+                            <a href="{{ route('cards.detail', ['id' => $card->api_id]) }}">
+                                <div class="card-body p-2 d-flex align-items-center justify-content-center bg-light rounded-3">
+                                    <img 
+                                        src="{{ $card->images->small }}" 
+                                        alt="{{ $card->name }}" 
+                                        class="img-fluid rounded-2"
+                                        loading="lazy"
+                                        style="max-height: 250px; object-fit: contain;"
+                                    >
+                                </div>
+                                <div class="card-footer bg-white border-0 text-center py-2">
+                                    <small class="text-truncate d-block fw-bold text-dark">
+                                        {{ $card->name }}
+                                    </small>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 @endforeach

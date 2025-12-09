@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('archetypes', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('key_card_id')->nullable()->constrained('cards')->nullOnDelete(); 
+            $table->foreignId('key_card_id')->nullable()->constrained('cards')->nullOnDelete();
+            $table->integer('times_played')->default(0);
+            $table->integer('wins')->default(0);
             $table->timestamps();
         });
     }

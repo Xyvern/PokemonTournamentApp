@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Archetype extends Model
 {
-    protected $fillable = ['name', 'key_card_id'];
+    protected $fillable = ['name', 'key_card_id', 'times_played', 'wins'];
 
     /**
      * Get all unique deck lists that fall under this archetype.
@@ -25,5 +25,14 @@ class Archetype extends Model
     public function keyCard(): BelongsTo
     {
         return $this->belongsTo(Card::class, 'key_card_id');
+    }
+
+    public function getWinRateAttribute()
+    {
+        if ($this->times_played == 0) {
+            return 0;
+        }
+        
+        return round(($this->wins / $this->times_played) * 100, 1);
     }
 }
