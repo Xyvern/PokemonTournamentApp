@@ -25,6 +25,11 @@ class Deck extends Model
         return $this->belongsTo(GlobalDeck::class);
     }
 
+    public function tournamentEntries()
+    {
+        return $this->hasMany(TournamentEntry::class);
+    }
+
     /**
      * A helper shortcut to get the archetype of this user's deck.
      * $deck->archetype

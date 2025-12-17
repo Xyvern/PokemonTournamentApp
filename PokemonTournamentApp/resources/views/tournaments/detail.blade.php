@@ -163,12 +163,14 @@
                                                 </td>
                                                 <td>
                                                     <span class="text-primary">
-                                                        @if ($entry->deck->globalDeck->archetype->name)
-                                                            <a href="{{ route('player.showDeck', ['deck' => $entry->deck->id]) }}">
+                                                        @if ($entry->deck->globalDeck->archetype?->name)
+                                                            <a href="{{ route('showDeck', ['deck' => $entry->deck->id]) }}">
                                                                 {{ $entry->deck->globalDeck->archetype->name }}
                                                             </a>
                                                         @else
-                                                            Unknown Deck
+                                                            <a href="{{ route('showDeck', ['deck' => $entry->deck->id]) }}">
+                                                                Unknown Deck Archetype
+                                                            </a>
                                                         @endif
                                                     </span>
                                                 </td>

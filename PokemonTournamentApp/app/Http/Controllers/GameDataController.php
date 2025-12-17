@@ -2,43 +2,86 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TournamentMatch;
 use Illuminate\Http\Request;
 
 class GameDataController extends Controller
 {
-    public function getPlayersData()
+    public function getMatchData($matchId)
     {
-        // Mocking Player 1 Data
-        $player1 = [
-            'id' => 101,
-            'username' => 'HeroPlayer',
-            'health' => 100,
-            'deck' => [
-                ['card_id' => 'c_001', 'name' => 'Fire Dragon', 'power' => 80],
-                ['card_id' => 'c_002', 'name' => 'Shield Wall', 'power' => 0],
-                ['card_id' => 'c_003', 'name' => 'Potion', 'power' => 0],
+        $match = TournamentMatch::with([
+            'player1.deck.globalDeck.cards', 
+            'player2.deck.globalDeck.cards'
+        ])->find($matchId);
+
+        if (!$match) {
+            return response()->json(['error' => 'Match not found'], 404);
+        }
+
+        $getDeckList = function ($entry) {
+            if (!$entry || !$entry->deck || !$entry->deck->globalDeck) {
+                return []; 
+            }
+
+            return $entry->deck->globalDeck->cards->map(function ($card) {
+                return [
+                    'api_id' => $card->api_id,
+                    'qty'    => $card->pivot->quantity,
+                ];
+            });
+        };
+
+        $player1 = $match->player1;
+        $player2 = $match->player2;
+
+        return response()->json([
+            'matchData' => [
+                'tournament_id' => $match->tournament_id,
+                'round_number'  => $match->round_number,
+            ],
+            'players' => [
+                'player1' => [
+                    'nickname'  => $player1?->user->nickname,
+                    'elo' => $player1?->user->elo,
+                    'deck'     => $getDeckList($player1), 
+                ],
+                'player2' => [
+                    'nickname'  => $player2?->user->nickname,
+                    'elo' => $player2?->user->elo,
+                    'deck'     => $getDeckList($player2), 
+                ],
             ]
-        ];
+        ]);
+    }
 
-        // Mocking Player 2 Data
-        $player2 = [
-            'id' => 202,
-            'username' => 'RivalPlayer',
-            'health' => 100,
-            'deck' => [
-                ['card_id' => 'c_004', 'name' => 'Ice Wizard', 'power' => 70],
-                ['card_id' => 'c_005', 'name' => 'Lightning Bolt', 'power' => 50],
-            ]
-        ];
-
-        // Combine into a single response structure
-        $responseData = [
-            'match_id' => 'm_998877',
-            'player_1' => $player1,
-            'player_2' => $player2
-        ];
-
-        // Return as JSON
-        return response()->json($responseData);
+    public function storeMatchData(Request $request)
+    {
+        $resultCode = $request->input('result_code');
+        $matchId = $request->input('match_id');
+        if ($resultCode==3) {
+            TournamentMatch::where('id', $matchId)
+                ->update([
+                    'result_code' => $resultCode,
+                ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Match data stored successfully'
+            ]);
+        }else{
+            $winner = $request->input('winner');
+            TournamentMatch::where('id', $matchId)
+                ->update([
+                    'result_code' => $resultCode,
+                    'winner' => $winner,
+                ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Match data stored successfully'
+            ]);
+        }
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Match data storage failed'
+        ]);
     }
 }

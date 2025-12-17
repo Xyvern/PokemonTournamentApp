@@ -87,7 +87,7 @@
 
                 <div class="col-lg-3 col-md-4 col-sm-6 col-12">
                     
-                    <a href="{{ route('player.showDeck', $deck->id) }}" class="deck-link">
+                    <a href="{{ route('showDeck', $deck->id) }}" class="deck-link">
                         <div class="card deck-card h-100">
                             
                             <!-- Image Section -->

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Archetype;
 use App\Models\Card;
+use App\Models\Deck;
 use App\Models\Tournament;
 use App\Models\TournamentEntry;
 use App\Models\TournamentMatch;
@@ -44,5 +45,14 @@ class SiteController extends Controller
     {
         $archetypes = Archetype::all();
         return view('archetypes.index', ['archetypes' => $archetypes]);
+    }
+
+    public function showDeck($id)
+    {
+        $deck = Deck::with('globalDeck.cards')->findOrFail($id);
+        if (!$deck) {
+            return redirect()->route('player.mydecks')->with('error', 'Deck not found.');
+        }
+        return view('player.decks.show', compact('deck'));
     }
 }

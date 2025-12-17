@@ -83,10 +83,14 @@
             @endforeach
         </div>
     </div>
-    {{-- <h4>Deck List Played by</h2>
-    <ul>
-        <li>1st Place LAIC 2026, Valentino Tannhauser</li>
-    </ul> --}}
+    @if ($deck->tournamentEntries->isNotEmpty())
+        <h4>Deck List Played by</h2>
+        <ul>
+            @foreach ($deck->tournamentEntries as $entry)
+                <li>{{ Number::ordinal($entry->rank) }} Place {{ $entry->tournament->name }}, {{ $entry->user->nickname }}</li>
+            @endforeach
+        </ul>
+    @endif
 </div>
 
 @endsection

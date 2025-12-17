@@ -36,7 +36,6 @@ Route::prefix('cards')->name('cards.')->group(function () {
 Route::prefix('archetypes')->name('archetypes.')->group(function () {
     Route::get('/', [SiteController::class, 'archetypes'])->name('index');
     Route::get('/{id}', [SiteController::class, 'archetypeDetail'])->name('detail');
-    Route::get('/{id}/{deckId}', [SiteController::class, 'archetypeDeck'])->name('deck');
 });
 
 Route::prefix('player')->name('player.')->group(function () {
@@ -48,9 +47,8 @@ Route::prefix('player')->name('player.')->group(function () {
     Route::get('/my-decks', [PlayerSiteController::class, 'myDecks'])->name('mydecks');
     Route::get('/decks/create', [PlayerSiteController::class, 'createDeck'])->name('createDeck');
     Route::post('/decks/store', [PlayerController::class, 'storeDeck'])->name('storeDeck');
-    Route::get('/decks/{deck}', [PlayerSiteController::class, 'showDeck'])->name('showDeck');
 });
-
+Route::get('/decks/{deck}', [SiteController::class, 'showDeck'])->name('showDeck');
 // Admin routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminSiteController::class, 'adminDashboard'])->name('dashboard');
