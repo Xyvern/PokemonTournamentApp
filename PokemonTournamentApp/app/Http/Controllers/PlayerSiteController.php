@@ -26,11 +26,32 @@ class PlayerSiteController extends Controller
 
         // 2. Query for Upcoming Tournaments (Registration or Active)
         // Ordered by soonest start_date first
-        $upcomingTournaments = Tournament::whereIn('status', ['registration', 'active'])
+        $upcomingTournaments = Tournament::where('status', 'registration')
             ->orderBy('start_date', 'asc')
             ->take(3)
             ->get();
 
+        // 3. Query for Current Tournaments the Player is Registered In
+        $activeTournaments = Tournament::where('status', 'active')
+            ->orderBy('start_date', 'asc')
+            ->get();
+
+        $currentTournaments = [];
+        foreach ($activeTournaments as $tournament) {
+            if ($tournament->entries()->where('user_id', Auth::id())->exists()) {
+                $currentTournaments[] = $tournament; 
+            }
+        }
+        // 4. Get All Upcoming Tournaments for Registration Check
+        $allUpcomingTournaments = Tournament::where('status', 'registration')
+            ->orderBy('start_date', 'asc')
+            ->get();
+        $registeredTournaments = [];
+        foreach ($allUpcomingTournaments as $tournament) {
+            if ($tournament->entries()->where('user_id', Auth::id())->exists()){
+                $registeredTournaments[] = $tournament;
+            }
+        }
         // 3. DUMMY DATA GENERATOR (For visual testing if DB is empty)
         // This ensures your Blade doesn't error or show empty states while developing.
         if ($upcomingTournaments->isEmpty()) {
@@ -55,7 +76,7 @@ class PlayerSiteController extends Controller
                 ]
             ]);
         }
-        return view('player.home', compact('sets', 'archetypes', 'recentTournaments', 'upcomingTournaments'));
+        return view('player.home', compact('sets', 'archetypes', 'recentTournaments', 'upcomingTournaments', 'currentTournaments', 'registeredTournaments'));
     }
 
     public function leaderboard()

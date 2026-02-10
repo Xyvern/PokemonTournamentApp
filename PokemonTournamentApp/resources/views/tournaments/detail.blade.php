@@ -70,69 +70,105 @@
                 @endif
 
                 {{-- STATE: ACTIVE (Pairings) --}}
-                @if($tournament->status === 'active')
+                @if($tournament->status === 'active' || $tournament->status === 'completed')
                     <div class="card mb-4">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Current Pairings (Round {{ $currentRound }})</h5>
-                            <span class="badge badge-light">Auto-refreshing</span>
+                            <div class="d-flex align-items-center">
+                                <h5 class="mb-0 mr-3">Pairings</h5>
+                                
+                                {{-- Round Pagination Controls --}}
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-prev-round" onclick="changeRound(-1)">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary disabled" id="round-display">
+                                        Round <span id="current-round-text">{{ $currentRound }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-next-round" onclick="changeRound(1)">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <span class="badge badge-light" id="loading-badge" style="display:none;">Loading...</span>
                         </div>
+
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover mb-0">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Table</th>
                                             <th>Player 1</th>
-                                            <th>Result</th>
                                             <th>Player 2</th>
+                                            <th>Result</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        @forelse($matches ?? [] as $match)
-                                            <tr>
-                                                <td class="align-middle font-weight-bold text-muted">{{ $match->table_number ?? '-' }}</td>
-                                                
-                                                {{-- Player 1 --}}
-                                                <td class="align-middle {{ $match->result_code === 1 ? 'font-weight-bold text-success' : '' }}">
-                                                    {{ $match->player1->user->name ?? 'Unknown' }}
-                                                    <span class="badge badge-pill badge-light border ml-1">{{ $match->player1->points }}pts</span>
-                                                </td>
-
-                                                {{-- Result --}}
-                                                <td class="align-middle text-center">
-                                                    @if($match->isReported())
-                                                        @if($match->result_code === 1)
-                                                            1 - 0
-                                                        @elseif($match->result_code === 2)
-                                                            0 - 1
-                                                        @elseif($match->result_code === 3)
-                                                            ½ - ½
-                                                        @endif
-                                                    @else
-                                                        <span class="badge badge-warning">In Progress</span>
-                                                    @endif
-                                                </td>
-
-                                                {{-- Player 2 --}}
-                                                <td class="align-middle {{ $match->result_code === 2 ? 'font-weight-bold text-success' : '' }}">
-                                                    @if($match->player2)
-                                                        {{ $match->player2->user->name ?? 'Unknown' }}
-                                                        <span class="badge badge-pill badge-light border ml-1">{{ $match->player2->points }}pts</span>
-                                                    @else
-                                                        <span class="text-muted font-italic">Bye</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="4" class="text-center py-4 text-muted">Pairings are being generated...</td>
-                                            </tr>
-                                        @endforelse
+                                    <tbody id="matches-table-body">
+                                        {{-- Load the partial initially for the current round --}}
+                                        @include('tournaments.partials.matches_rows', ['matches' => $matches])
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
+
+                    {{-- AJAX Script --}}
+                    <script>
+                        // Initialize State
+                        let currentRound = {{ $currentRound }};
+                        // If tournament is active, max round is current. If completed, it's total rounds.
+                        const maxRound = {{ $tournament->status === 'completed' ? $tournament->total_rounds : $currentRound }}; 
+                        const tournamentId = {{ $tournament->id }};
+
+                        function updateButtons() {
+                            // Disable Prev if at round 1
+                            document.getElementById('btn-prev-round').disabled = (currentRound <= 1);
+                            // Disable Next if at max round
+                            document.getElementById('btn-next-round').disabled = (currentRound >= maxRound);
+                            // Update Text
+                            document.getElementById('current-round-text').innerText = currentRound;
+                        }
+
+                        function changeRound(direction) {
+                            let newRound = currentRound + direction;
+
+                            if (newRound < 1 || newRound > maxRound) return;
+
+                            currentRound = newRound;
+                            updateButtons();
+                            loadMatches(currentRound);
+                        }
+
+                        function loadMatches(round) {
+                            // Show loading
+                            document.getElementById('loading-badge').style.display = 'inline-block';
+                            document.getElementById('matches-table-body').style.opacity = '0.5';
+
+                            // URL generation
+                            let url = "{{ route('tournaments.matches.fetch', ':id') }}";
+                            url = url.replace(':id', tournamentId) + "?round=" + round;
+
+                            fetch(url)
+                                .then(response => response.text())
+                                .then(html => {
+                                    // Replace table body
+                                    document.getElementById('matches-table-body').innerHTML = html;
+                                    
+                                    // Hide loading
+                                    document.getElementById('loading-badge').style.display = 'none';
+                                    document.getElementById('matches-table-body').style.opacity = '1';
+                                })
+                                .catch(error => {
+                                    console.error('Error fetching matches:', error);
+                                    document.getElementById('loading-badge').innerText = 'Error';
+                                });
+                        }
+
+                        // Run once on load to set button states
+                        document.addEventListener("DOMContentLoaded", function() {
+                            updateButtons();
+                        });
+                    </script>
                 @endif
 
                 {{-- STATE: COMPLETED (Standings) --}}
@@ -239,8 +275,8 @@
                                         $opponent = $isPlayer1 ? $match->player2 : $match->player1;
                                         
                                         // 3. Calculate Result Display
-                                        $badgeClass = 'badge-secondary';
-                                        $resultText = 'Pending';
+                                        $badgeClass = 'badge-warning';
+                                        $resultText = 'In Progress';
                                         
                                         if ($match->result_code !== null) {
                                             if ($match->result_code === 3) {
@@ -279,39 +315,6 @@
                         @endif
                     </div>
                 </div>
-
-                {{-- Recent Matches List (Optional sidebar content) --}}
-                @if($tournament->status === 'active' && isset($myEntry))
-                    <div class="card">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0">Your Match History</h6>
-                        </div>
-                        <ul class="list-group list-group-flush">
-                            @foreach($myEntry->matches() as $match)
-                                @php
-                                    $isP1 = $match->player1_entry_id === $myEntry->id;
-                                    $opponent = $isP1 ? $match->player2 : $match->player1;
-                                    $myResult = $match->result_code; 
-                                    // Logic to determine W/L for me
-                                    $resultLabel = 'Pending';
-                                    $resultClass = 'badge-light';
-                                    if ($match->isReported()) {
-                                        if ($match->result_code === 3) { $resultLabel = 'Tie'; $resultClass = 'badge-warning'; }
-                                        elseif (($isP1 && $match->result_code === 1) || (!$isP1 && $match->result_code === 2)) { $resultLabel = 'Win'; $resultClass = 'badge-success'; }
-                                        else { $resultLabel = 'Loss'; $resultClass = 'badge-danger'; }
-                                    }
-                                @endphp
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <small class="text-muted d-block">Round {{ $match->round_number }}</small>
-                                        vs {{ $opponent->user->name ?? 'Bye' }}
-                                    </span>
-                                    <span class="badge {{ $resultClass }}">{{ $resultLabel }}</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
             </div>
         </div>
     </div>

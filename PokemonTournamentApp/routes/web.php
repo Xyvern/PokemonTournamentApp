@@ -26,6 +26,7 @@ Route::prefix('sets')->name('sets.')->group(function () {
 Route::prefix('tournaments')->name('tournaments.')->group(function () {
     Route::get('/', [SiteController::class, 'tournaments'])->name('index');
     Route::get('/{id}', [SiteController::class, 'tournamentDetail'])->name('detail');
+    Route::get('{id}/matches', [PlayerController::class, 'fetchRoundMatches'])->name('matches.fetch');
 });
 
 Route::prefix('cards')->name('cards.')->group(function () {

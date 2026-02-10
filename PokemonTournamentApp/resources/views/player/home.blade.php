@@ -3,89 +3,87 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    @php
-        // Dummy Current Tournament (set to null if you want the "not registered" state)
-        $currentTournament = (object)[
-            'name' => 'Weekly Cup Vol. 12',
-            'date' => now()->addDays(2),
-        ];
-
-        // Dummy Registered Tournaments
-        $registeredTournaments = collect([
-            (object)[
-                'tournamentID' => 1,
-                'name' => 'Dragon League Qualifier',
-                'date' => now()->addDays(5),
-                'number_of_players' => 16,
-                'capacity' => 32,
-                'format' => 'Standard'
-            ],
-            (object)[
-                'tournamentID' => 2,
-                'name' => 'City Championship',
-                'date' => now()->addDays(10),
-                'number_of_players' => 22,
-                'capacity' => 32,
-                'format' => 'Expanded'
-            ],
-        ]);
-
-        // Dummy Upcoming Tournaments
-        $tournaments = collect([
-            (object)[
-                'tournamentID' => 3,
-                'name' => 'November Open Cup',
-                'date' => now()->addDays(7),
-                'number_of_players' => 10,
-                'capacity' => 32,
-                'format' => 'Standard'
-            ],
-            (object)[
-                'tournamentID' => 4,
-                'name' => 'PokeLeague Clash',
-                'date' => now()->addDays(14),
-                'number_of_players' => 18,
-                'capacity' => 32,
-                'format' => 'Standard'
-            ],
-        ]);
-    @endphp
     <div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
         <h1 style="margin-top: 2vh">Welcome, {{ Auth::user()->nickname }}</h1>
-        <h2 style="margin-top: 2vh">Your current Session</h2>
-        @if (!empty($currentTournament))
-            <p>You are currently registered for the following tournament:</p>
-            <ul>
-                <li>{{ $currentTournament->name }} - {{ $currentTournament->date }}</li>
-            </ul>
+        <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Your current Session</h2>
+        @if (!empty($currentTournaments))
+            <div class="row" style="margin-top: 2vh;">    
+                @foreach ($currentTournaments as $item)
+                    @php
+                        // Get the current user's entry for this specific tournament
+                        $myEntry = $item->entries->where('user_id', Auth::id())->first();
+                    @endphp
+                    <div class="col">
+                        <a href="{{ route('tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
+                            <div class="info-box shadow-sm mb-3">
+                                <!-- Left side: Big date/Capacity -->
+                                <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem; min-width: 80px;">
+                                    <span style="font-size: 1.5rem; font-weight: bold;">{{ $item->capacity }}</span>
+                                    <span style="font-size: 0.8rem;">Max</span>
+                                </span>
+
+                                <!-- Right side: Details -->
+                                <div class="info-box-content p-2">
+                                    <span class="info-box-text" style="font-weight: bold; font-size: 1.1rem;">{{ $item->name }}</span>
+                                    <div class="info-box-number text-muted" style="font-weight: 500; font-size: 0.9rem;">
+                                        <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ $item->start_date instanceof \DateTime ? $item->start_date->format('d M Y') : $item->start_date }}</p>
+                                        <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                    </div>
+                                </div>
+                                <div class="info-box-content p-2 text-right">
+                                    <span class="d-block text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">My Performance</span>
+                                    
+                                    <div class="d-flex align-items-end justify-content-end mb-1">
+                                        <span style="font-size: 1.3rem; font-weight: bold; line-height: 1;" class="text-primary mr-1">
+                                            {{ $myEntry->points }}
+                                        </span>
+                                        <span style="font-size: 0.8rem; color: #6c757d; margin-bottom: 2px;">Pts</span>
+                                    </div>
+
+                                    <div style="font-size: 0.85rem;">
+                                        <span class="badge badge-success" title="Wins">{{ $myEntry->wins }}W</span>
+                                        <span class="badge badge-danger" title="Losses">{{ $myEntry->losses }}L</span>
+                                        <span class="badge badge-secondary" title="Ties">{{ $myEntry->ties }}T</span>
+                                    </div>
+
+                                    @if($myEntry->rank)
+                                    <div class="mt-1" style="font-size: 0.8rem; font-weight: bold; color: #495057;">
+                                        Rank: #{{ $myEntry->rank }}
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
         @else
             <div style="background-color: #eeeeee; padding: 1vh; border-radius: 5px; margin-top: 2vh;">
                 <p style="margin: 0px">You are not currently registered for any tournaments.</p>
             </div>
         @endif
-        <h2 style="margin-top: 2vh">Upcoming Registered Tournaments</h2>
-        @if ($registeredTournaments->isEmpty())
+        <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Upcoming Registered Tournaments</h2>
+        @if (empty($registeredTournaments))
             <p>No upcoming registered tournaments found.</p>
         @else
             <div class="row" style="margin-top: 2vh;">
                 @foreach ($registeredTournaments as $item)
                     <div class="col-3">
-                        <a href="{{ route('tournaments.detail', ['id' => $item->tournamentID]) }}" style="text-decoration: none; color: inherit;">
-                            <div class="info-box">
-                                <!-- Left side: Big date -->
-                                <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem;">
-                                    <span style="font-size: 2rem; font-weight: bold;">{{ $item->capacity }}</span>
-                                    <span style="font-size: 1rem;">Players</span>
+                        <a href="{{ route('tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
+                            <div class="info-box shadow-sm mb-3">
+                                <!-- Left side: Big date/Capacity -->
+                                <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem; min-width: 80px;">
+                                    <span style="font-size: 1.5rem; font-weight: bold;">{{ $item->capacity }}</span>
+                                    <span style="font-size: 0.8rem;">Max</span>
                                 </span>
 
                                 <!-- Right side: Details -->
-                                <div class="info-box-content" style="justify-content: space-between;">
-                                    <span class="info-box-text" style="font-weight: bold; font-size: 1.25rem;">{{ $item->name }}</span>
-                                    <span class="info-box-number" style="font-weight: 500; font-size: 1rem;">
-                                        <p style="margin: 0; padding:0;">Date: {{ $item->date->format('l, d F Y, H:i') }}</p>
-                                        <p style="margin: 0; padding:0;">Registered: {{ $item->number_of_players }}/{{ $item->capacity }} players</p>
-                                        <p style="margin: 0; padding:0;">Format: {{ $item->format }}</p>
-                                    </span>
+                                <div class="info-box-content p-2">
+                                    <span class="info-box-text" style="font-weight: bold; font-size: 1.1rem;">{{ $item->name }}</span>
+                                    <div class="info-box-number text-muted" style="font-weight: 500; font-size: 0.9rem;">
+                                        <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ $item->start_date instanceof \DateTime ? $item->start_date->format('d M Y') : $item->start_date }}</p>
+                                        <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                    </div>
                                 </div>
                             </div>
                         </a>
@@ -93,7 +91,7 @@
                 @endforeach
             </div>
         @endif
-        <h2 style="margin-top: 2vh">Top Archetypes</h2>
+        <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Top Archetypes</h2>
         <div style="margin-top: 2vh;" class="row">
             @foreach ($archetypes as $archetype)
                 <div class="col-3">
@@ -120,6 +118,9 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+        <div class="text-right mt-2">
+            <a href="#" class="btn btn-sm btn-outline-info">See more archetypes &rarr;</a>
         </div>
         {{-- ------------------ --}}
         <div class="row">
@@ -196,29 +197,31 @@
             </div>
         </div>
         {{-- ---------------------------------- --}}
-        <h2 style="margin-top: 2vh">Recent sets</h2>
+        <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Recent sets</h2>
         @if ($sets->isEmpty())
             <p>No recent sets found.</p>
         @else
-            <a href="{{ route('sets.index') }}" style="text-align: end; display: block; margin-bottom: 1vh; text-decoration: none;">See more sets</a>
-            <div class="row">
-                @foreach ($sets as $set)
-                    <div class="col" style="display: flex; justify-content: center;">
-                        <div class="card" style="width: 100%;">
-                            <a href=" {{ route('sets.detail', $set->id) }}" style="text-decoration: none; color: inherit;">
-                                <div style="height: 150px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 1vh;">
-                                    <img src="{{ $set->images->logo }}" 
-                                        alt="{{ $set->name }}" 
-                                        style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                                </div>
-                                <div class="card-body text-center" style="width: 100%;">
-                                    <h5 class="card-title" style="font-weight: 500;">{{ $set->name }} ({{ $set->total }} cards)</h5>
-                                </div>
-                            </a>
+        <div class="row">
+            @foreach ($sets as $set)
+            <div class="col" style="display: flex; justify-content: center;">
+                <div class="card" style="width: 100%;">
+                    <a href=" {{ route('sets.detail', $set->id) }}" style="text-decoration: none; color: inherit;">
+                        <div style="height: 150px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 1vh;">
+                            <img src="{{ $set->images->logo }}" 
+                            alt="{{ $set->name }}" 
+                            style="max-height: 100%; max-width: 100%; object-fit: contain;">
                         </div>
-                    </div>
-                @endforeach
+                        <div class="card-body text-center" style="width: 100%;">
+                            <h5 class="card-title" style="font-weight: 500;">{{ $set->name }} ({{ $set->total }} cards)</h5>
+                        </div>
+                    </a>
+                </div>
             </div>
+            @endforeach
+        </div>
+        <div class="text-right mt-2">
+            <a href="{{ route('sets.index') }}" class="btn btn-sm btn-outline-info">See more sets &rarr;</a>
+        </div>
         @endif
     </div>
-@endsection
+    @endsection

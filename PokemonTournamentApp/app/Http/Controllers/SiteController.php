@@ -38,7 +38,13 @@ class SiteController extends Controller
         $myEntry = TournamentEntry::where('tournament_id', $tournament->id)
         ->where('user_id', Auth::id())
         ->first();
-        return view('tournaments.detail', ['tournament' => $tournament, 'myEntry' => $myEntry]);
+        if ($tournament->status == "active") {
+            $currentRound = $tournament->matches->max('round_number');
+        }else{
+            $currentRound = 1;
+        }
+        $matches = $tournament->getMatchesForRound($currentRound);
+        return view('tournaments.detail', ['tournament' => $tournament, 'myEntry' => $myEntry, 'currentRound' => $currentRound, 'matches' => $matches]);
     }
 
     public function archetypes()

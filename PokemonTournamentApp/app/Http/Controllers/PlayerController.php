@@ -6,6 +6,7 @@ use App\Models\Card;
 use App\Models\Deck;
 use App\Models\DeckContent;
 use App\Models\GlobalDeck;
+use App\Models\Tournament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -101,5 +102,18 @@ class PlayerController extends Controller
         });
 
         return redirect()->route('player.mydecks')->with('success', 'Deck saved successfully!');
+    }
+
+    public function fetchRoundMatches(Request $request, $id)
+    {
+        $tournament = Tournament::findOrFail($id);
+        $round = $request->input('round');
+
+        // Use the model method you provided
+        $matches = $tournament->getMatchesForRound($round);
+
+        // Return the partial view with the new matches
+        // We render it to HTML string to send back to AJAX
+        return view('tournaments.partials.matches_rows', compact('matches'))->render();
     }
 }
