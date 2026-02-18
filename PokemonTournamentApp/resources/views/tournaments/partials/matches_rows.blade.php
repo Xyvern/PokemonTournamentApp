@@ -20,12 +20,24 @@
         {{-- Result --}}
         <td class="align-middle">
             @if($match->result_code)
-                @if($match->result_code === 1) 1 - 0
-                @elseif($match->result_code === 2) 0 - 1
-                @elseif($match->result_code === 3) ½ - ½
+                @if($match->result_code === 1) 3 - 0
+                @elseif($match->result_code === 2) 0 - 3
+                @elseif($match->result_code === 3) 1 - 1
                 @endif
             @else
                 <span class="badge badge-warning">In Progress</span>
+            @endif
+        </td>
+        {{-- Action --}}
+        <td class="align-middle">
+            @if($match->result_code)
+                <span class="badge badge-success">Completed</span>
+            @else
+                @if (Auth::user()->id === $match->player1->user->id || Auth::user()->id === $match->player2->user->id)
+                    <a href="#" class="btn btn-sm btn-success" style="width: 50%">Play</a>
+                @else
+                    <a href="#" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
+                @endif
             @endif
         </td>
     </tr>

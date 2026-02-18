@@ -7,6 +7,7 @@ use App\Models\Deck;
 use App\Models\DeckContent;
 use App\Models\GlobalDeck;
 use App\Models\Tournament;
+use App\Models\TournamentEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -115,5 +116,72 @@ class PlayerController extends Controller
         // Return the partial view with the new matches
         // We render it to HTML string to send back to AJAX
         return view('tournaments.partials.matches_rows', compact('matches'))->render();
+    }
+
+    public function dropTournament($id, Request $request)
+    {
+        $tournament = Tournament::findOrFail($id);
+
+        // 1. Find the actual Model, not just the ID
+        // We also ensure this entry actually belongs to the user to prevent hacking
+        $entry = TournamentEntry::where('id', $request->entry_id)
+                    ->where('user_id', Auth::id()) // SECURITY CHECK
+                    ->first();
+
+        // 2. Check if entry exists (Handles "You are not registered" case)
+        if (!$entry) {
+            return redirect()->route('tournaments.detail', $id)
+                ->with('error', 'Registration not found or unauthorized.');
+        }
+
+        // 3. Check Tournament Status
+        if ($tournament->status !== 'registration') {
+            return redirect()->route('tournaments.detail', $id)
+                ->with('error', 'Cannot drop from a tournament that has already started.');
+        }
+
+        // 4. Update Player Count safely
+        $tournament->decrement('registered_player'); // Safer than $val = $val - 1
+        
+        // 5. Delete the entry
+        $entry->delete();
+
+        return redirect()->route('tournaments.detail', $id)
+            ->with('success', 'You have dropped from the tournament.');
+    }
+
+    public function registerTournament($id, Request $request)
+    {
+        $tournament = Tournament::findOrFail($id);
+        $deck = Deck::where('id', $request->deck_id)->where('user_id', Auth::id())->first();
+
+        // 1. Check if user is already registered
+        $existingEntry = TournamentEntry::where('tournament_id', $id)
+                            ->where('user_id', Auth::id())
+                            ->first();
+
+        if ($existingEntry) {
+            return redirect()->route('tournaments.detail', $id)
+                ->with('error', 'You are already registered for this tournament.');
+        }
+
+        // 2. Check Tournament Status
+        if ($tournament->status !== 'registration') {
+            return redirect()->route('tournaments.detail', $id)
+                ->with('error', 'Registration for this tournament is closed.');
+        }
+
+        // 3. Create Tournament Entry
+        TournamentEntry::create([
+            'tournament_id' => $id,
+            'user_id'       => Auth::id(),
+            'deck_id'       => $deck->id ?? null, // You can extend this to allow deck selection during registration
+        ]);
+
+        // 4. Increment Player Count safely
+        $tournament->increment('registered_player'); // Safer than $val = $val + 1
+
+        return redirect()->route('tournaments.detail', $id)
+            ->with('success', 'You have successfully registered for the tournament!');
     }
 }

@@ -84,10 +84,14 @@
         </div>
     </div>
     @if ($deck->tournamentEntries->isNotEmpty())
-        <h4>Deck List Played by</h2>
+        <h4>Deck List Played by</h4>
         <ul>
-            @foreach ($deck->tournamentEntries as $entry)
-                <li>{{ Number::ordinal($entry->rank) }} Place {{ $entry->tournament->name }}, {{ $entry->user->nickname }}</li>
+            @foreach ($deck->tournamentEntries->whereNotNull('rank') as $entry)
+                @if ($entry->tournament->status == "completed")   
+                    <li>
+                        {{ Number::ordinal($entry->rank) }} Place {{ $entry->tournament->name }}, {{ $entry->user->nickname }}
+                    </li>
+                @endif
             @endforeach
         </ul>
     @endif

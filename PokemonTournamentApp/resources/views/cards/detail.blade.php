@@ -12,15 +12,17 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
+    /* MAIN TITLE */
     .card-main-title {
         text-align: center;
-        margin-bottom: 4vh;
-        font-weight: 800;
-        font-size: 2.5rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        margin-bottom: 3rem;
+        font-weight: 700;
+        font-size: 2.25rem;
+        color: #2c3e50;
+        letter-spacing: -0.5px;
     }
 
     .card-detail-grid {
@@ -28,13 +30,13 @@
         flex-wrap: wrap;
         width: 100%;
         max-width: 1200px;
-        gap: 2rem;
+        gap: 3rem;
     }
 
     /* Left Column */
     .left-panel {
         flex: 1;
-        min-width: 300px;
+        min-width: 320px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -42,118 +44,109 @@
 
     .card-img-lg {
         width: 100%;
-        max-width: 450px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        max-width: 420px;
+        border-radius: 16px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
     }
+    .card-img-lg:hover { transform: scale(1.02); }
 
     .meta-data {
-        margin-top: 1.5rem;
-        text-align: center;
-        color: #555;
-        font-family: monospace;
-        font-size: 1.1rem;
-        background: #f8f9fa;
-        padding: 10px 20px;
-        border-radius: 8px;
+        margin-top: 2rem;
         width: 100%;
-        max-width: 450px;
+        max-width: 420px;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
+    .meta-row {
+        display: flex; justify-content: space-between; padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f3f5; font-size: 0.95rem;
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-label { color: #868e96; font-weight: 600; }
+    .meta-value { color: #212529; font-weight: 500; }
 
     /* Right Column */
-    .right-panel {
-        flex: 1.5;
-        min-width: 300px;
-    }
+    .right-panel { flex: 1.5; min-width: 320px; }
 
     /* Pokemon Specific UI */
     .hp-type-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 2px solid #eee;
-        padding-bottom: 1rem;
-        margin-bottom: 1rem;
+        display: flex; justify-content: space-between; align-items: flex-end;
+        border-bottom: 1px solid #dee2e6; padding-bottom: 1rem; margin-bottom: 1.5rem;
     }
-
-    .hp-text {
-        font-size: 2rem;
-        font-weight: 900;
-        color: #dc3545; /* HP Red */
-    }
+    .hp-text { font-size: 1.75rem; font-weight: 700; color: #e03131; line-height: 1; }
+    .hp-label { font-size: 1rem; color: #868e96; margin-right: 4px; font-weight: 600; }
 
     .stage-badge {
-        background-color: #333;
-        color: #fff;
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        margin-bottom: 2rem;
+        background-color: #343a40; color: #fff; padding: 6px 16px;
+        border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2rem;
         display: inline-block;
     }
 
-    .attack-row {
-        background: white;
-        border: 1px solid #eee;
+    /* --- NEW: ABILITY SECTION --- */
+    .ability-row {
+        background: #fff0f0; /* Light red tint for Ability */
+        border: 1px solid #ffc9c9;
         border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        transition: transform 0.2s;
-    }
-    .attack-row:hover {
-        border-color: #ccc;
-    }
-
-    .attack-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-    }
-
-    /* Stats Grid (Weakness/Resist/Retreat) */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 1rem;
-        margin-top: 3rem;
-        text-align: center;
-        background: #f1f1f1;
         padding: 1rem;
-        border-radius: 8px;
+        margin-bottom: 1.5rem;
     }
-
-    .stat-title {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        color: #777;
+    .ability-name {
+        color: #c92a2a; /* Dark Red */
+        font-weight: 700;
+        font-size: 1.1rem;
         margin-bottom: 0.5rem;
-        font-weight: bold;
+        display: flex;
+        align-items: center;
+    }
+    .ability-badge {
+        background-color: #c92a2a;
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-right: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
-    /* CSS Helpers from previous context */
+    /* Attack Rows */
+    .attack-row {
+        background: #fff; border-bottom: 1px solid #f1f3f5; padding: 1.5rem 0;
+    }
+    .attack-row:last-child { border-bottom: none; }
+    .attack-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .attack-name { font-size: 1.2rem; font-weight: 700; color: #212529; }
+    .attack-damage { font-size: 1.25rem; font-weight: 700; color: #212529; }
+    .attack-text { font-size: 0.95rem; color: #495057; line-height: 1.5; margin-top: 0.5rem; }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+        background: #dee2e6; border-radius: 8px; overflow: hidden; margin-top: 3rem;
+    }
+    .stat-box { background: #f8f9fa; padding: 1rem; text-align: center; }
+    .stat-title {
+        font-size: 0.75rem; text-transform: uppercase; color: #adb5bd;
+        font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.5rem;
+    }
+
+    /* Icons */
     .type-badge {
-        display: inline-block; width: 30px; height: 30px;
-        border-radius: 50%; 
-        text-align: center; 
-        line-height: 30px;
-        color: transparent; /* Hide text since we use images now */
-        font-weight: bold; font-size: 12px; margin-left: 5px;
-        background-size: cover; /* Ensure image covers the circle */
-        background-position: center;
-        background-repeat: no-repeat;
+        display: inline-block; width: 32px; height: 32px; border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: 8px;
+        background-size: cover; background-position: center;
     }
-    
     .attack-cost {
-        display: inline-block; width: 25px; height: 25px;
-        border-radius: 50%; margin-right: 4px; vertical-align: middle;
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-        background-size: cover; /* Ensure image covers the circle */
-        background-position: center;
-        background-repeat: no-repeat;
+        display: inline-block; width: 24px; height: 24px; border-radius: 50%;
+        margin-right: 6px; vertical-align: middle; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        background-size: cover; background-position: center;
     }
-    
+
     /* Type Images */
     .type-grass { background-image: url('https://asia.pokemon-card.com/various_images/energy/Grass.png'); }
     .type-fire { background-image: url('https://asia.pokemon-card.com/various_images/energy/Fire.png'); }
@@ -167,181 +160,152 @@
     .type-dragon { background-image: url('https://asia.pokemon-card.com/various_images/energy/Dragon.png'); }
     .type-colorless { background-image: url('https://asia.pokemon-card.com/various_images/energy/Colorless.png'); }
 
-    /* Trainer Text Box */
+    /* Trainer Box */
     .trainer-box {
-        border: 2px solid #e0e0e0;
-        padding: 2rem;
-        border-radius: 10px;
-        background-color: #fff;
-        font-size: 1.1rem;
-        line-height: 1.6;
-        font-style: italic;
-        color: #444;
+        background: #f8f9fa; border-left: 4px solid #ced4da; padding: 1.5rem;
+        border-radius: 4px; font-size: 1rem; line-height: 1.6; color: #343a40;
     }
 </style>
 
 <div class="card-page-wrapper">
 
-    {{-- 2. MIDDLE TITLE: CARD NAME --}}
+    {{-- TITLE --}}
     <h1 class="card-main-title">{{ $card->name }}</h1>
 
     <div class="card-detail-grid">
-
-        {{-- 3. LEFT SIDE: IMAGE + API ID + SET --}}
+        {{-- LEFT SIDE --}}
         <div class="left-panel">
-            <img 
-                src="{{ $card->images->large ?? $card->images->small }}" 
-                alt="{{ $card->name }}" 
-                class="card-img-lg"
-            >
-
+            <img src="{{ $card->images->large ?? $card->images->small }}" alt="{{ $card->name }}" class="card-img-lg">
             <div class="meta-data">
-                <div><strong>ID:</strong> {{ $card->api_id }}</div>
-                <div><strong>Set:</strong> {{ $card->set->name }}</div>
-                @if(isset($card->set->ptcgoCode))
-                    <div class="text-muted small mt-1">({{ $card->set->ptcgoCode }})</div>
-                @endif
+                <div class="meta-row"><span class="meta-label">ID</span><span class="meta-value">{{ $card->api_id }}</span></div>
+                <div class="meta-row"><span class="meta-label">Set</span><span class="meta-value">{{ $card->set->name }}</span></div>
+                <div class="meta-row"><span class="meta-label">Number</span><span class="meta-value">{{ $card->number }} / {{ $card->set->printed_total }}</span></div>
+                <div class="meta-row"><span class="meta-label">Artist</span><span class="meta-value">{{ $card->artist ?? 'Unknown' }}</span></div>
             </div>
         </div>
 
-        {{-- 4. RIGHT SIDE: CARD INFO --}}
+        {{-- RIGHT SIDE --}}
         <div class="right-panel">
+            @php $supertype = strtolower(\Illuminate\Support\Str::ascii($card->supertype)); @endphp
 
-            @php
-                $supertype = strtolower(\Illuminate\Support\Str::ascii($card->supertype));
-            @endphp
-
-            {{-- ========================================== --}}
-            {{-- SCENARIO A: POKEMON --}}
-            {{-- ========================================== --}}
             @if($supertype === 'pokemon')
-
-                {{-- HP and Type --}}
+                {{-- HP & Type --}}
                 <div class="hp-type-bar">
-                    <div class="hp-text">HP {{ $card->hp }}</div>
+                    <div><span class="hp-label">HP</span><span class="hp-text">{{ $card->hp }}</span></div>
                     <div class="d-flex">
                         @foreach($card->types as $type)
-                            <div class="type-badge type-{{ strtolower($type->type) }}">
-                                {{ substr($type->type, 0, 1) }}
-                            </div>
+                            <div class="type-badge type-{{ strtolower($type->type) }}"></div>
                         @endforeach
                     </div>
                 </div>
 
-                {{-- Evolution Stage --}}
-                <div class="stage-badge">
-                    {{ $card->subtypes->first()->subtype ?? 'Basic' }}
-                </div>
+                {{-- Stage --}}
+                <div class="stage-badge">{{ $card->subtypes->first()->subtype ?? 'Basic Pokémon' }}</div>
 
-                {{-- Attacks --}}
+                {{-- 1. NEW: ABILITIES SECTION --}}
+                @if(isset($card->abilities) && count($card->abilities) > 0)
+                    <div class="abilities-section">
+                        @foreach($card->abilities as $ability)
+                            <div class="ability-row">
+                                <div class="ability-name">
+                                    <span class="ability-badge">{{ $ability->type ?? 'Ability' }}</span>
+                                    {{ $ability->name }}
+                                </div>
+                                <p class="mb-0 text-dark">{{ $ability->text }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- 2. ATTACKS SECTION --}}
                 <div class="attacks-section">
                     @forelse($card->attacks as $attack)
                         <div class="attack-row">
                             <div class="attack-header">
                                 <div class="d-flex align-items-center">
-                                    {{-- Costs --}}
-                                    <div class="me-3">
+                                    <div class="me-3" style="min-width: 80px;">
                                         @foreach($attack->costs as $cost)
-                                            <span class="attack-cost type-{{ strtolower($cost->type ?? $cost->energy ?? 'colorless') }}"></span>
+                                            <span class="attack-cost type-{{ strtolower($cost->cost ?? 'colorless') }}"></span>
                                         @endforeach
                                     </div>
-                                    <h4 class="m-0 fw-bold">{{ $attack->name }}</h4>
+                                    <span class="attack-name">{{ $attack->name }}</span>
                                 </div>
-                                <h4 class="m-0 fw-bold">{{ $attack->damage }}</h4>
+                                <span class="attack-damage">{{ $attack->damage }}</span>
                             </div>
                             @if($attack->text)
-                                <p class="text-muted m-0">{{ $attack->text }}</p>
+                                <p class="attack-text">{{ $attack->text }}</p>
                             @endif
                         </div>
                     @empty
-                        <p class="text-muted">No attacks data.</p>
+                        {{-- Only show 'No attacks' if there are also no abilities, to avoid empty looking cards --}}
+                        @if(!isset($card->abilities) || count($card->abilities) === 0)
+                            <p class="text-muted">No attacks available.</p>
+                        @endif
                     @endforelse
                 </div>
 
-                {{-- Stats Grid --}}
+                {{-- 3. STATS GRID --}}
                 <div class="stats-grid">
-                    {{-- Weakness --}}
-                    <div>
+                    <div class="stat-box">
                         <div class="stat-title">Weakness</div>
                         @forelse($card->weaknesses as $weakness)
                             <div class="d-flex justify-content-center align-items-center gap-1">
-                                <span class="type-badge type-{{ strtolower($weakness->type) }}" style="width:20px; height:20px; line-height:20px; font-size:10px;">
-                                    {{ substr($weakness->type, 0, 1) }}
-                                </span>
-                                <span>{{ $weakness->value }}</span>
+                                <span class="type-badge type-{{ strtolower($weakness->type) }}" style="width:20px; height:20px; margin:0;"></span>
+                                <span class="fw-bold ms-1" style="color:#495057;">{{ $weakness->value }}</span>
                             </div>
-                        @empty
-                            <span>-</span>
-                        @endforelse
+                        @empty <span class="text-muted">-</span> @endforelse
                     </div>
-
-                    {{-- Resistance --}}
-                    <div>
+                    <div class="stat-box">
                         <div class="stat-title">Resistance</div>
                         @if(count($card->resistances ?? []) > 0)
                             @foreach($card->resistances as $resistance)
                                 <div class="d-flex justify-content-center align-items-center gap-1">
-                                    <span class="type-badge type-{{ strtolower($resistance->type) }}" style="width:20px; height:20px; line-height:20px; font-size:10px;">
-                                        {{ substr($resistance->type, 0, 1) }}
-                                    </span>
-                                    <span>{{ $resistance->value }}</span>
+                                    <span class="type-badge type-{{ strtolower($resistance->type) }}" style="width:20px; height:20px; margin:0;"></span>
+                                    <span class="fw-bold ms-1" style="color:#495057;">{{ $resistance->value }}</span>
                                 </div>
                             @endforeach
-                        @else
-                            <span>-</span>
-                        @endif
+                        @else <span class="text-muted">-</span> @endif
                     </div>
-
-                    {{-- Retreat --}}
-                    <div>
+                    <div class="stat-box">
                         <div class="stat-title">Retreat</div>
                         @if($card->converted_retreat_cost > 0)
-                            @for($i = 0; $i < $card->converted_retreat_cost; $i++)
-                                <span class="attack-cost type-colorless" style="width:15px; height:15px; background-color:#aaa;"></span>
-                            @endfor
-                        @else
-                            <span>-</span>
-                        @endif
+                            <div class="d-flex justify-content-center">
+                                @for($i = 0; $i < $card->converted_retreat_cost; $i++)
+                                    <span class="attack-cost type-colorless" style="width:18px; height:18px; background-color:#adb5bd; margin:0 2px;"></span>
+                                @endfor
+                            </div>
+                        @else <span class="text-muted">-</span> @endif
                     </div>
                 </div>
 
-            {{-- ========================================== --}}
-            {{-- SCENARIO B: TRAINER --}}
-            {{-- ========================================== --}}
             @elseif($supertype === 'trainer')
-                
+                {{-- TRAINER LOGIC (Same as before) --}}
                 <div class="d-flex align-items-center mb-4">
-                    <span class="badge bg-secondary text-uppercase fs-6">Trainer</span>
-                    <span class="ms-2 fs-5 text-muted">{{ $card->subtypes->first()->type ?? '' }}</span>
+                    <span class="stage-badge mb-0" style="background-color: #495057;">Trainer</span>
+                    <span class="ms-3 fs-5 fw-bold text-dark">{{ $card->subtypes->first()->type ?? '' }}</span>
                 </div>
-
-                {{-- Text Only --}}
                 <div class="trainer-box">
-                    @if($card->flavor_text)
-                        {{ $card->flavor_text }}
-                    @elseif($card->rules)
-                         {{-- Fallback if rules column exists in future --}}
-                         @foreach($card->rules as $rule)
-                            <p>{{ $rule->text }}</p>
-                         @endforeach
-                    @else
-                        <p class="text-muted">No effect text available.</p>
-                    @endif
+                    @if($card->flavor_text) <div class="mb-3 fst-italic text-muted">{{ $card->flavor_text }}</div> @endif
+                    @if($card->rules)
+                        @foreach($card->rules as $rule) <p class="mb-2">{{ $rule->text }}</p> @endforeach
+                    @else <p class="text-muted">No effect text available.</p> @endif
                 </div>
 
-            {{-- ========================================== --}}
-            {{-- SCENARIO C: ENERGY --}}
-            {{-- ========================================== --}}
             @elseif($supertype === 'energy')
-
-                {{-- Display Image Only (Logic: Right side is empty or minimal as image is on left) --}}
-                <div class="d-flex justify-content-center align-items-center h-100 text-muted">
-                    {{-- Leaving mostly empty to focus on the image on the left --}}
-                    <div>
-                        <span class="badge bg-info text-dark">Energy Card</span>
-                    </div>
+                {{-- ENERGY LOGIC (Same as before) --}}
+                @php $isBasic = \Illuminate\Support\Str::contains(strtolower($card->subtypes->first()->type ?? 'Energy'), 'basic'); @endphp
+                <div class="d-flex align-items-center mb-4">
+                    <span class="stage-badge mb-0 {{ $isBasic ? 'bg-info' : 'bg-warning text-dark' }}">
+                        {{ $card->subtypes->first()->type ?? 'Energy' }}
+                    </span>
                 </div>
-
+                @if(!$isBasic)
+                    <div class="trainer-box">
+                        @if(isset($card->rules) && count($card->rules) > 0)
+                            @foreach($card->rules as $rule) <p>{{ is_string($rule) ? $rule : ($rule->text ?? '') }}</p> @endforeach
+                        @else <p class="text-muted">Special Energy card.</p> @endif
+                    </div>
+                @endif
             @endif
 
         </div>

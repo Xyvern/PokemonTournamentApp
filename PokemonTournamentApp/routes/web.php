@@ -22,14 +22,16 @@ Route::prefix('sets')->name('sets.')->group(function () {
     Route::get('/{id}', [PlayerSiteController::class, 'playerSetDetail'])->name('detail');
 });
 
-// todo
 Route::prefix('tournaments')->name('tournaments.')->group(function () {
     Route::get('/', [SiteController::class, 'tournaments'])->name('index');
     Route::get('/{id}', [SiteController::class, 'tournamentDetail'])->name('detail');
+    Route::post('/{id}/register', [PlayerController::class, 'registerTournament'])->name('register');
+    Route::post('/{id}/drop', [PlayerController::class, 'dropTournament'])->name('drop');
     Route::get('{id}/matches', [PlayerController::class, 'fetchRoundMatches'])->name('matches.fetch');
 });
 
 Route::prefix('cards')->name('cards.')->group(function () {
+    // fix batch to prevent overloading, filter ga jalan
     Route::get('/', [SiteController::class, 'cards'])->name('index');
     Route::get('/{id}', [SiteController::class, 'cardDetail'])->name('detail');
 });
@@ -42,14 +44,16 @@ Route::prefix('archetypes')->name('archetypes.')->group(function () {
 Route::prefix('player')->name('player.')->group(function () {
     Route::get('/home', [PlayerSiteController::class, 'playerHome'])->name('home');
     Route::get('/leaderboard', [PlayerSiteController::class, 'leaderboard'])->name('leaderboard');
-    // todo
     Route::get('/profile/{id}', [PlayerSiteController::class, 'playerProfile'])->name('profile');
 
+    // check lagi decknya jalan ato ga, filter ga jalan, jangan overload kartu
     Route::get('/my-decks', [PlayerSiteController::class, 'myDecks'])->name('mydecks');
     Route::get('/decks/create', [PlayerSiteController::class, 'createDeck'])->name('createDeck');
     Route::post('/decks/store', [PlayerController::class, 'storeDeck'])->name('storeDeck');
 });
+
 Route::get('/decks/{deck}', [SiteController::class, 'showDeck'])->name('showDeck');
+
 // Admin routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminSiteController::class, 'adminDashboard'])->name('dashboard');
@@ -62,3 +66,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/{id}/delete', [AdminController::class, 'deleteTournament'])->name('delete');
     });
 });
+
+// create archetype after tournament
+// pikiran laporan nya admin
+// middleware

@@ -3,42 +3,39 @@
 @section('title', 'All Tournaments')
 
 @section('content')
-<div class="container-fluid">
+<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
     
     {{-- 1. PAGE HEADER & FILTERS --}}
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm border-0">
                 <div class="card-body">
                     <div class="row align-items-end">
                         <div class="col-md-6">
-                            <h2 class="mb-0">All Tournaments</h2>
-                            <p class="text-muted">Find and register for upcoming events</p>
+                            <h2 class="mb-0 font-weight-bold">Tournaments</h2>
+                            <p class="text-muted mb-0">Find and register for upcoming events</p>
                         </div>
                         
-                        {{-- Search & Filter Form --}}
-                        <div class="col-md-6">
-                            <form method="GET" action="{{ url()->current() }}" class="d-flex gap-2 justify-content-md-end">
-                                {{-- Status Filter --}}
-                                <div class="form-group mb-0 mr-2">
-                                    <select name="status" class="form-control" onchange="this.form.submit()">
-                                        <option value="">All Statuses</option>
-                                        <option value="registration" {{ request('status') == 'registration' ? 'selected' : '' }}>Registration Open</option>
-                                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Live / Active</option>
-                                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                                    </select>
-                                </div>
-
-                                {{-- Search Bar --}}
-                                <div class="input-group">
-                                    <input type="text" name="search" class="form-control" placeholder="Search tournament name..." value="{{ request('search') }}">
-                                    <div class="input-group-append">
-                                        <button class="btn btn-primary" type="submit">
-                                            <i class="fas fa-search"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
+                        {{-- Filter Tabs (Controller Logic) --}}
+                        <div class="col-md-6 text-md-right mt-3 mt-md-0">
+                            <div class="btn-group shadow-sm" role="group">
+                                <a href="{{ route('tournaments.index') }}" 
+                                   class="btn {{ request('filter') === null ? 'btn-dark' : 'btn-outline-secondary' }}">
+                                   All
+                                </a>
+                                <a href="{{ route('tournaments.index', ['filter' => 'upcoming']) }}" 
+                                   class="btn {{ request('filter') === 'upcoming' ? 'btn-dark' : 'btn-outline-secondary' }}">
+                                   Upcoming
+                                </a>
+                                <a href="{{ route('tournaments.index', ['filter' => 'registered']) }}" 
+                                   class="btn {{ request('filter') === 'registered' ? 'btn-dark' : 'btn-outline-secondary' }}">
+                                   My Tournaments
+                                </a>
+                                <a href="{{ route('tournaments.index', ['filter' => 'completed']) }}" 
+                                   class="btn {{ request('filter') === 'completed' ? 'btn-dark' : 'btn-outline-secondary' }}">
+                                   Completed
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -46,93 +43,103 @@
         </div>
     </div>
 
-    {{-- 2. TOURNAMENTS TABLE --}}
+    {{-- 2. DATATABLE --}}
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-striped mb-0">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th style="width: 5%;">#</th>
-                                    <th style="width: 35%;">Tournament Name</th>
-                                    <th style="width: 20%;">Date & Time</th>
-                                    <th style="width: 15%;">Status</th>
-                                    <th style="width: 15%;">Players</th>
-                                    <th style="width: 10%; text-align: right;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($tournaments as $tournament)
-                                <tr>
-                                    <td>{{ $loop->iteration + ($tournaments->currentPage() - 1) * $tournaments->perPage() }}</td>
-                                    <td>
-                                        <div class="font-weight-bold text-dark" style="font-size: 1.05rem;">{{ $tournament->name }}</div>
-                                        <small class="text-muted">{{ $tournament->total_rounds }} Rounds • Standard Format</small>
-                                    </td>
-                                    <td>
-                                        <div>{{ $tournament->start_date->format('d M Y') }}</div>
-                                        <small class="text-muted">{{ $tournament->start_date->format('H:i') }}</small>
-                                    </td>
-                                    <td>
-                                        @if($tournament->status === 'registration')
-                                            <span class="badge badge-primary px-2 py-1">Registration</span>
-                                        @elseif($tournament->status === 'active')
-                                            <span class="badge badge-success px-2 py-1">Live</span>
-                                        @elseif($tournament->status === 'completed')
-                                            <span class="badge badge-secondary px-2 py-1">Completed</span>
-                                        @else
-                                            <span class="badge badge-light border">{{ ucfirst($tournament->status) }}</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="progress flex-grow-1 mr-2" style="height: 6px;">
-                                                @php
-                                                    $percent = ($tournament->capacity > 0) ? ($tournament->registered_player / $tournament->capacity) * 100 : 0;
-                                                    $color = $percent >= 100 ? 'bg-danger' : ($percent >= 75 ? 'bg-warning' : 'bg-success');
-                                                @endphp
-                                                <div class="progress-bar {{ $color }}" role="progressbar" style="width: {{ $percent }}%"></div>
-                                            </div>
-                                            <small class="text-muted text-nowrap">
-                                                {{ $tournament->registered_player }}/{{ $tournament->capacity }}
-                                            </small>
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <table id="tournamentsTable" class="table table-bordered table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">#</th>
+                                <th style="width: 30%;">Tournament Name</th>
+                                <th style="width: 20%;">Date & Time</th>
+                                <th style="width: 15%;">Status</th>
+                                <th style="width: 20%;">Players</th>
+                                <th style="width: 10%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($tournaments as $tournament)
+                            <tr>
+                                <td class="align-middle text-center">{{ $loop->iteration }}</td>
+                                <td class="align-middle">
+                                    <div class="font-weight-bold text-dark" style="font-size: 1.05rem;">{{ $tournament->name }}</div>
+                                    <small class="text-muted">{{ $tournament->total_rounds }} Rounds • Standard</small>
+                                </td>
+                                <td class="align-middle" data-sort="{{ $tournament->start_date->timestamp }}">
+                                    <div class="font-weight-bold text-dark">{{ $tournament->start_date->format('d M Y') }}</div>
+                                    <small class="text-muted">{{ $tournament->start_date->format('H:i') }} WIB</small>
+                                </td>
+                                <td class="align-middle text-center">
+                                    @if($tournament->status === 'registration')
+                                        <span class="badge badge-primary px-2 py-1">Registration</span>
+                                    @elseif($tournament->status === 'active')
+                                        <span class="badge badge-success px-2 py-1">Live</span>
+                                    @elseif($tournament->status === 'completed')
+                                        <span class="badge badge-secondary px-2 py-1">Completed</span>
+                                    @else
+                                        <span class="badge badge-light border">{{ ucfirst($tournament->status) }}</span>
+                                    @endif
+                                </td>
+                                <td class="align-middle">
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 mr-2" style="height: 6px; background-color: #e9ecef;">
+                                            @php
+                                                $percent = ($tournament->capacity > 0) ? ($tournament->registered_player / $tournament->capacity) * 100 : 0;
+                                                $color = $percent >= 100 ? 'bg-danger' : ($percent >= 75 ? 'bg-warning' : 'bg-success');
+                                            @endphp
+                                            <div class="progress-bar {{ $color }}" role="progressbar" style="width: {{ $percent }}%"></div>
                                         </div>
-                                    </td>
-                                    <td class="text-right">
-                                        {{-- Explicitly passing 'id' parameter to match your route definition --}}
-                                        <a href="{{ route('tournaments.detail', ['id' => $tournament->id]) }}" class="btn btn-sm btn-outline-primary">
-                                            Details <i class="fas fa-arrow-right ml-1"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-5">
-                                        <div class="text-muted">
-                                            <i class="fas fa-search fa-2x mb-3"></i>
-                                            <p class="mb-0">No tournaments found matching your criteria.</p>
-                                            @if(request('search') || request('status'))
-                                                <a href="{{ url()->current() }}" class="btn btn-link btn-sm mt-2">Clear Filters</a>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                                        <small class="text-muted font-weight-bold text-nowrap">
+                                            {{ $tournament->registered_player }}/{{ $tournament->capacity }}
+                                        </small>
+                                    </div>
+                                </td>
+                                <td class="align-middle text-center">
+                                    <a href="{{ route('tournaments.detail', ['id' => $tournament->id]) }}" class="btn btn-sm btn-outline-primary font-weight-bold">
+                                        View <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
-                
-                {{-- Pagination Links --}}
-                @if($tournaments->hasPages())
-                    <div class="card-footer bg-white d-flex justify-content-end">
-                        {{ $tournaments->appends(request()->query())->links() }}
-                    </div>
-                @endif
             </div>
         </div>
     </div>
 </div>
+
+{{-- Initialize DataTable --}}
 @endsection
+@push('scripts')
+<script>
+    $(function () {
+        $("#tournamentsTable").DataTable({
+            "responsive": true,
+            "lengthChange": false, 
+            "autoWidth": false,
+            "searching": true,
+            "pageLength": 10,
+            "order": [[ 2, "desc" ]], // Sort by Date (Column Index 2)
+            "language": {
+                "search": "Search Name:", // Updated label
+                "emptyTable": "No tournaments found."
+            },
+            
+            // --- NEW: Restrict Search to Column 1 (Name) ---
+            "columnDefs": [
+                { 
+                    "targets": [0, 2, 3, 4, 5], // Column Indexes: #, Date, Status, Players, Action
+                    "searchable": false         // Disable search for these
+                },
+                {
+                    "targets": [1],             // Column Index: Tournament Name
+                    "searchable": true          // Enable search (Default, but good to be explicit)
+                }
+            ]
+        });
+    });
+</script>
+@endpush
