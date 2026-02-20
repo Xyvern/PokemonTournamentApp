@@ -28,6 +28,8 @@ return new class extends Migration
                   ->constrained('tournament_entries')
                   ->cascadeOnDelete();
 
+            $table->string('room_code')->nullable(); // For online matches
+            $table->integer('starting_player')->nullable(); // 'player1' or 'player2'
             // Results
             // null = not played yet, 1 = P1 Win, 2 = P2 Win, 3 = Tie/Draw
             $table->tinyInteger('result_code')->nullable(); 
