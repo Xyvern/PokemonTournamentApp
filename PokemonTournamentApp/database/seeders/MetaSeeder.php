@@ -120,79 +120,68 @@ class MetaSeeder extends Seeder
     /**
      * Reusable logic to seed a deck and its archetype
      */
+/**
+     * Reusable logic to seed a deck and its archetype
+     */
     private function seedDeck(User $user, string $deckName, string $archetypeName, array $archetypeKey, array $deckData)
     {
         $this->command->info("--- Processing Deck: {$deckName} ---");
 
-        // 1. Create/Find Archetype
-        $keyApiId = "{$archetypeKey[0]}-{$archetypeKey[1]}";
-        $keyCard = Card::where('api_id', $keyApiId)->first();
-
-        if (!$keyCard) {
-             $keyCard = $this->createPlaceholderCard($keyApiId, $archetypeName . " Key Card");
-        }
+        // 1. Find the Playable version of the Archetype Key Card
+        $keyCard = $this->getPlayableVersion($archetypeKey[0], $archetypeKey[1]);
 
         $archetype = Archetype::firstOrCreate(
             ['name' => $archetypeName],
             ['key_card_id' => $keyCard->id]
         );
 
-        // 2. Build Card Map (Key = API ID)
-        // We store both the DB ID (for insertion) and qty (for hashing)
+        // 2. Build Card Map
         $cardsMap = []; 
         
         foreach ($deckData as $item) {
             $setCode = $item[0];
             $number = $item[1];
             $quantity = $item[2];
-            $apiId = "{$setCode}-{$number}";
             
-            $card = Card::where('api_id', $apiId)->first();
+            // Get the playable (original) version of this card
+            $card = $this->getPlayableVersion($setCode, $number);
+            $finalApiId = $card->api_id;
 
-            if (!$card) {
-                $this->command->warn("Card not found: {$apiId}. Creating placeholder.");
-                $card = $this->createPlaceholderCard($apiId, "Missing {$setCode}-{$number}");
-            }
-
-            // Structure: 'sv1-86' => ['id' => 105, 'qty' => 2]
-            if (isset($cardsMap[$apiId])) {
-                $cardsMap[$apiId]['qty'] += $quantity;
+            if (isset($cardsMap[$finalApiId])) {
+                $cardsMap[$finalApiId]['qty'] += $quantity;
             } else {
-                $cardsMap[$apiId] = [
+                $cardsMap[$finalApiId] = [
                     'id' => $card->id,
                     'qty' => $quantity
                 ];
             }
         }
 
-        // 3. Generate Hash (Sort by API ID)
-        ksort($cardsMap); // Alphabetical sort by API ID (e.g., me1-119 comes before sv1-86)
+        // 3. Generate Hash (Alphabetical sort by API ID)
+        ksort($cardsMap); 
         
         $hashString = "";
         foreach ($cardsMap as $apiId => $data) {
-            // Hash string uses API ID: "sv1-86:2|sv2-185:4|"
             $hashString .= "{$apiId}:{$data['qty']}|";
         }
         $deckHash = hash('sha256', $hashString);
 
-        // 4. Create Global Deck
+        // 4. Create/Find Global Deck
         $globalDeck = GlobalDeck::firstOrCreate(
             ['deck_hash' => $deckHash],
             ['archetype_id' => $archetype->id]
         );
 
-        // 5. Insert Content (if new)
+        // 5. Insert Content
         if ($globalDeck->wasRecentlyCreated) {
             foreach ($cardsMap as $data) {
                 DeckContent::create([
                     'global_deck_id' => $globalDeck->id,
-                    'card_id' => $data['id'], // Use the DB ID for the foreign key
+                    'card_id' => $data['id'],
                     'quantity' => $data['qty']
                 ]);
             }
             $this->command->info("Created new Global Deck hash.");
-        } else {
-            $this->command->info("Linked to existing Global Deck hash.");
         }
 
         // 6. Create User Deck
@@ -203,6 +192,43 @@ class MetaSeeder extends Seeder
         ]);
         
         $this->command->info("Deck '{$deckName}' assigned to {$user->name}.\n");
+    }
+
+    /**
+     * Helper to find the "Playable" (Original) version of a card.
+     */
+    private function getPlayableVersion(string $setCode, string $number)
+    {
+        $apiId = "{$setCode}-{$number}";
+        $requestedCard = Card::where('api_id', $apiId)->first();
+
+        // If it doesn't exist at all, create placeholder
+        if (!$requestedCard) {
+            return $this->createPlaceholderCard($apiId, "Missing {$apiId}");
+        }
+
+        // If it's already the Playable version, return it
+        if ($requestedCard->is_playable) {
+            return $requestedCard;
+        }
+
+        // If it's NOT playable, find the one that IS playable with the same functional identity
+        // IDENTITY: Name + HP (for Pokemon) or just Name (for Trainers/Energy)
+        $query = Card::where('name', $requestedCard->name)
+            ->where('is_playable', true);
+
+        if ($requestedCard->supertype === 'Pokémon') {
+            $query->where('hp', $requestedCard->hp);
+        }
+
+        $playableVersion = $query->first();
+
+        if ($playableVersion) {
+            return $playableVersion;
+        }
+
+        // Fallback: If no playable version found, return the requested one
+        return $requestedCard;
     }
 
     private function createPlaceholderCard($apiId, $name)

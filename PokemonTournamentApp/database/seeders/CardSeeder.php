@@ -17,14 +17,30 @@ use App\Models\CardRetreatCost;
 use App\Models\CardPokedexNumber;
 use App\Models\CardLegality;
 use App\Models\CardImage;
-use App\Models\CardRule; // <--- Added Import
+use App\Models\CardRule;
 
 class CardSeeder extends Seeder
 {
     public function run(): void
     {
+        // --- 1. Load Playable Lookup ---
+        $playablePath = public_path('data/cards/playable.json');
+        $playableIds = [];
+
+        if (File::exists($playablePath)) {
+            $playableData = json_decode(File::get($playablePath), true);
+            // Create a lookup map of IDs for O(1) complexity
+            foreach ($playableData as $pCard) {
+                if (isset($pCard['id'])) {
+                    $playableIds[$pCard['id']] = true;
+                }
+            }
+            $this->command->info("Loaded " . count($playableIds) . " playable IDs from playable.json.");
+        } else {
+            $this->command->error("playable.json not found! All cards will be marked as NOT playable.");
+        }
+
         $path = public_path('data/cards');
-        // Ensure the directory exists before scanning
         if (!File::exists($path)) {
             $this->command->warn("Directory not found: $path");
             return;
@@ -34,6 +50,9 @@ class CardSeeder extends Seeder
 
         foreach ($files as $file) {
             $setId = pathinfo($file->getFilename(), PATHINFO_FILENAME);
+
+            // Skip the playable.json file itself if it's in the same folder
+            if ($setId === 'playable') continue;
 
             $set = Set::where('api_id', $setId)->first();
             if (!$set) {
@@ -50,7 +69,11 @@ class CardSeeder extends Seeder
             $this->command->info("Importing cards for set: {$set->name} ({$set->api_id})");
 
             foreach ($jsonData as $cardData) {
-                DB::transaction(function () use ($cardData, $set) {
+                DB::transaction(function () use ($cardData, $set, $playableIds) {
+                    
+                    // --- 2. Check Playable Status ---
+                    $isPlayable = isset($playableIds[$cardData['id'] ?? '']);
+
                     // Create main card
                     $card = Card::create([
                         'api_id' => $cardData['id'] ?? null,
@@ -64,6 +87,7 @@ class CardSeeder extends Seeder
                         'number' => $cardData['number'] ?? null,
                         'artist' => $cardData['artist'] ?? null,
                         'converted_retreat_cost' => $cardData['convertedRetreatCost'] ?? null,
+                        'is_playable' => $isPlayable, // <--- New Field Assigned
                     ]);
 
                     // --- Subtypes ---
@@ -82,8 +106,7 @@ class CardSeeder extends Seeder
                         ]);
                     }
 
-                    // --- Rules (ADDED) ---
-                    // This handles the "rules" array from the JSON (usually for Trainer cards)
+                    // --- Rules ---
                     foreach ($cardData['rules'] ?? [] as $ruleText) {
                         CardRule::create([
                             'card_id' => $card->id,
@@ -165,6 +188,6 @@ class CardSeeder extends Seeder
             }
         }
 
-        $this->command->info('✅ Card seeding complete!');
+        $this->command->info('✅ Card seeding complete with Playable status!');
     }
 }

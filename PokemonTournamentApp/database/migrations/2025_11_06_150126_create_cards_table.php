@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('number')->nullable();
             $table->string('artist')->nullable();
             $table->integer('converted_retreat_cost')->nullable();
+            $table->boolean('is_playable')->default(false);
             $table->timestamps();
         });
     }
