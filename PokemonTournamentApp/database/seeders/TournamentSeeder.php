@@ -11,6 +11,7 @@ use App\Services\EloCalculator;
 use App\Services\SwissPairingGenerator;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str; // <-- ADDED: For UUID generation
 
 class TournamentSeeder extends Seeder
 {
@@ -72,7 +73,7 @@ class TournamentSeeder extends Seeder
             // Generate Pairings
             $this->pairingService->generatePairings($currentEntries, $round);
             
-            // Resolve Matches (Set winners)
+            // Resolve Matches (Set winners, room codes, starting players)
             $this->simulateRoundResults($tournament, $round);
         }
 
@@ -149,8 +150,22 @@ class TournamentSeeder extends Seeder
         $entries = TournamentEntry::where('tournament_id', $tournament->id)->get();
         $this->pairingService->generatePairings($entries, 3);
         
-        // NOTE: We do NOT call simulateRoundResults for Round 3. 
-        // Matches exist in DB but result_code is null/pending.
+        // <-- ADDED: Set Room Codes and Starting Players for the pending Round 3 matches
+        $pendingMatches = TournamentMatch::where('tournament_id', $tournament->id)
+            ->where('round_number', 3)
+            ->with(['player1', 'player2'])
+            ->get();
+
+        foreach ($pendingMatches as $match) {
+            $startingPlayer = $match->player2_entry_id 
+                ? (rand(0, 1) ? $match->player1->user_id : $match->player2->user_id) 
+                : $match->player1->user_id;
+
+            $match->update([
+                'room_code' => Str::uuid()->toString(),
+                'starting_player' => $startingPlayer
+            ]);
+        }
 
         // Calculate interim standings/tiebreakers based on R1 & R2
         $this->calculateTiebreakers($tournament);
@@ -194,13 +209,20 @@ class TournamentSeeder extends Seeder
             ->get();
 
         foreach ($matches as $match) {
+            // <-- ADDED: Base properties for all matches
+            $roomCode = Str::uuid()->toString();
+
             // Handle Bye
             if (!$match->player2_entry_id) {
                 $p1Entry = $match->player1;
                 $p1Entry->wins++;
                 $p1Entry->points += 3;
                 $p1Entry->save();
-                $match->update(['result_code' => 1]); // 1 = P1 Win (Bye)
+                $match->update([
+                    'result_code' => 1,
+                    'room_code' => $roomCode,
+                    'starting_player' => $p1Entry->user->id // <-- ADDED
+                ]); 
                 continue;
             }
 
@@ -215,6 +237,9 @@ class TournamentSeeder extends Seeder
             else $resultCode = rand(1, 2);
 
             $winnerString = ($resultCode === 1) ? 'player1' : 'player2';
+            
+            // <-- ADDED: Randomly pick the starting player (User ID)
+            $startingPlayerId = rand(0, 1) ? $p1User->id : $p2User->id;
 
             // Calculate ELO
             $eloChange = $this->eloCalculator->eloChange(43, $p1User->elo, $p2User->elo, $winnerString);
@@ -266,7 +291,9 @@ class TournamentSeeder extends Seeder
 
             $match->update([
                 'result_code' => $resultCode,
-                'elo_gain' => $eloChange
+                'elo_gain' => $eloChange,
+                'room_code' => $roomCode, // <-- ADDED
+                'starting_player' => $startingPlayerId // <-- ADDED
             ]);
         }
     }
@@ -330,9 +357,6 @@ class TournamentSeeder extends Seeder
     {
         $opponents = collect();
         
-        // Find all matches for this entry that have a result (or just exist, depending on rules)
-        // Usually OMW includes current opponents even if match isn't finished, 
-        // but here we only query matches that exist in DB.
         $matches = TournamentMatch::where(function($q) use ($entry) {
                 $q->where('player1_entry_id', $entry->id)
                   ->orWhere('player2_entry_id', $entry->id);

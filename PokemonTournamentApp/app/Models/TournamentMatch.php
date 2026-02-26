@@ -15,6 +15,8 @@ class TournamentMatch extends Model
         'round_number',
         'player1_entry_id',
         'player2_entry_id',
+        'room_code',
+        'starting_player',
         'result_code',
         'elo_gain',
     ];

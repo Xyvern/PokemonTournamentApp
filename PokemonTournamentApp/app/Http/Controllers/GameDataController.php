@@ -38,14 +38,18 @@ class GameDataController extends Controller
             'matchData' => [
                 'tournament_id' => $match->tournament_id,
                 'round_number'  => $match->round_number,
+                'room_code'     => $match->room_code,
+                'starting_player' => $match->starting_player,
             ],
             'players' => [
                 'player1' => [
+                    'id' => $player1?->id,
                     'nickname'  => $player1?->user->nickname,
                     'elo' => $player1?->user->elo,
                     'deck'     => $getDeckList($player1), 
                 ],
                 'player2' => [
+                    'id' => $player2?->id,
                     'nickname'  => $player2?->user->nickname,
                     'elo' => $player2?->user->elo,
                     'deck'     => $getDeckList($player2), 
