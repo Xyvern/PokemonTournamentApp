@@ -34,9 +34,9 @@
                 <span class="badge badge-success">Completed</span>
             @else
                 @if (Auth::user()->id === $match->player1->user->id || Auth::user()->id === $match->player2->user->id)
-                    <a href="#" class="btn btn-sm btn-success" style="width: 50%">Play</a>
+                    <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-success" style="width: 50%">Play</a>
                 @else
-                    <a href="#" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
+                    <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
                 @endif
             @endif
         </td>

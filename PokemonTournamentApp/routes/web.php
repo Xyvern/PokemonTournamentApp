@@ -75,6 +75,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 // pikiran laporan nya admin
 // middleware
 
+Route::get('/play', function (Request $request) {
+    // We don't need to fetch data here, we just need to load the view!
+    // The URL parameters (?match_id=X) automatically pass through to the browser bar.
+    return view('game.play'); 
+})->middleware('auth'); // Ensure they are logged in!
 
 // Route::get('/export-all-cards-combined', function () {
 //     // 1. Setup environment (Processing thousands of cards requires more resources)

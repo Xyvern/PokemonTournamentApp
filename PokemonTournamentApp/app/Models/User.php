@@ -40,4 +40,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Deck::class);
     }
+
+    public function tournamentEntries()
+    {
+        return $this->hasMany(TournamentEntry::class);
+    }
 }

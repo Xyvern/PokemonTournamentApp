@@ -20,4 +20,9 @@ class Set extends Model
     {
         return $this->hasOne(SetImage::class);
     }
+
+    public function cards()
+    {
+        return $this->hasMany(Card::class);
+    }
 }

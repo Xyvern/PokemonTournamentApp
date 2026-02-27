@@ -43,13 +43,13 @@ class GameDataController extends Controller
             ],
             'players' => [
                 'player1' => [
-                    'id' => $player1?->id,
+                    'id' => $player1?->user->id,
                     'nickname'  => $player1?->user->nickname,
                     'elo' => $player1?->user->elo,
                     'deck'     => $getDeckList($player1), 
                 ],
                 'player2' => [
-                    'id' => $player2?->id,
+                    'id' => $player2?->user->id,
                     'nickname'  => $player2?->user->nickname,
                     'elo' => $player2?->user->elo,
                     'deck'     => $getDeckList($player2), 
@@ -72,11 +72,9 @@ class GameDataController extends Controller
                 'message' => 'Match data stored successfully'
             ]);
         }else{
-            $winner = $request->input('winner');
             TournamentMatch::where('id', $matchId)
                 ->update([
                     'result_code' => $resultCode,
-                    'winner' => $winner,
                 ]);
             return response()->json([
                 'status' => 'success',

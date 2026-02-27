@@ -42,4 +42,5 @@ class Card extends Model
         return $this->belongsToMany(GlobalDeck::class, 'deck_contents', 'card_id', 'global_deck_id')
                     ->withPivot('quantity');
     }
+
 }
