@@ -4244,68 +4244,68 @@
         }
     },
     {
-        "id": "me1-188",
+        "id": "me1-77",
         "name": "Mega Lucario ex",
-        "supertype": "Pok\u00e9mon",
+        "supertype": "Pokémon",
         "subtypes": [
-            "Stage 1",
-            "MEGA",
-            "ex"
+        "Stage 1",
+        "MEGA",
+        "ex"
         ],
         "hp": "340",
         "types": [
-            "Fighting"
+        "Fighting"
         ],
         "evolvesFrom": "Riolu",
         "rules": [
-            "Mega Evolution ex Rule: When your Mega Evolution Pok\u00e9mon ex is Knocked Out, your opponent takes 3 Prize cards."
+        "Mega Evolution ex Rule: When your Mega Evolution Pokémon ex is Knocked Out, your opponent takes 3 Prize cards."
         ],
         "attacks": [
-            {
-                "name": "Aura Jab",
-                "cost": [
-                    "Fighting"
-                ],
-                "convertedEnergyCost": 1,
-                "damage": "130",
-                "text": "Attach up to 3 Basic Fighting Energy cards from your discard pile to your Benched Pok\u00e9mon in any way you like."
-            },
-            {
-                "name": "Mega Brave",
-                "cost": [
-                    "Fighting",
-                    "Fighting"
-                ],
-                "convertedEnergyCost": 2,
-                "damage": "270",
-                "text": "During your next turn, this Pok\u00e9mon can't use Mega Brave."
-            }
+        {
+            "name": "Aura Jab",
+            "cost": [
+            "Fighting"
+            ],
+            "convertedEnergyCost": 1,
+            "damage": "130",
+            "text": "Attach up to 3 Basic Fighting Energy cards from your discard pile to your Benched Pokémon in any way you like."
+        },
+        {
+            "name": "Mega Brave",
+            "cost": [
+            "Fighting",
+            "Fighting"
+            ],
+            "convertedEnergyCost": 2,
+            "damage": "270",
+            "text": "During your next turn, this Pokémon can't use Mega Brave."
+        }
         ],
         "weaknesses": [
-            {
-                "type": "Psychic",
-                "value": "\u00d72"
-            }
+        {
+            "type": "Psychic",
+            "value": "×2"
+        }
         ],
         "retreatCost": [
-            "Colorless",
-            "Colorless"
+        "Colorless",
+        "Colorless"
         ],
         "convertedRetreatCost": 2,
-        "number": "188",
-        "rarity": "Mega Hyper Rare",
+        "number": "77",
+        "rarity": "Double Rare",
         "nationalPokedexNumbers": [
-            448
+        448
         ],
         "legalities": {
-            "unlimited": "Legal",
-            "standard": "Legal",
-            "expanded": "Legal"
+        "unlimited": "Legal",
+        "standard": "Legal",
+        "expanded": "Legal"
         },
         "regulationMark": "I",
         "images": {
-            "small": "https://images.pokemontcg.io/me1/188.png",
-            "large": "https://images.pokemontcg.io/me1/188_hires.png"
+        "small": "https://images.pokemontcg.io/me1/77.png",
+        "large": "https://images.pokemontcg.io/me1/77_hires.png"
         }
     },
     {

@@ -14,14 +14,14 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $users = [
+            ['username' => 'hans', 'password' => 'hans', 'nickname' => 'Hans', 'role' => 2],
+            ['username' => 'harbi', 'password' => 'harbi', 'nickname' => 'Harbi', 'role' => 2],
             ['username' => 'darren', 'password' => 'darren', 'nickname' => 'Darren', 'role' => 1],
             ['username' => 'chris', 'password' => 'chris', 'nickname' => 'Chris', 'role' => 1],
             ['username' => 'kevin', 'password' => 'kevin', 'nickname' => 'Kevin', 'role' => 1],
-            ['username' => 'hans', 'password' => 'hans', 'nickname' => 'Hans', 'role' => 2],
             ['username' => 'hazel', 'password' => 'hazel', 'nickname' => 'Hazel', 'role' => 1],
             ['username' => 'angga', 'password' => 'angga', 'nickname' => 'Angga', 'role' => 1],
             ['username' => 'nando', 'password' => 'nando', 'nickname' => 'Nando', 'role' => 1],
-            ['username' => 'harbi', 'password' => 'harbi', 'nickname' => 'Harbi', 'role' => 2],
             ['username' => 'jordan', 'password' => 'jordan', 'nickname' => 'Jordan', 'role' => 1],
             ['username' => 'ivan', 'password' => 'ivan', 'nickname' => 'Ivan', 'role' => 1],
             ['username' => 'febtry', 'password' => 'febtry', 'nickname' => 'Febtry', 'role' => 1],
@@ -46,13 +46,27 @@ class UserSeeder extends Seeder
             ['username' => 'rehan', 'password' => 'rehan', 'nickname' => 'Rehan', 'role' => 1],
             ['username' => 'jonathan', 'password' => 'jonathan', 'nickname' => 'Jonathan', 'role' => 1],
             ['username' => 'filbert', 'password' => 'filbert', 'nickname' => 'Filbert', 'role' => 1],
-            ['username' => 'toha', 'password' => 'toha', 'nickname' => 'Toha', 'role' => 1],
+            ['username' => 'ken', 'password' => 'ken', 'nickname' => 'Ken', 'role' => 1],
+            ['username' => 'indra', 'password' => 'indra', 'nickname' => 'Indra', 'role' => 1],
+            ['username' => 'nico', 'password' => 'nico', 'nickname' => 'Nico', 'role' => 1],
+            ['username' => 'dwi', 'password' => 'dwi', 'nickname' => 'Dwi', 'role' => 1],
+            ['username' => 'ivander', 'password' => 'ivander', 'nickname' => 'Ivander', 'role' => 1],
+            ['username' => 'kholid', 'password' => 'kholid', 'nickname' => 'Kholid', 'role' => 1],
+            ['username' => 'yohanes', 'password' => 'yohanes', 'nickname' => 'Yohanes', 'role' => 1],
+            ['username' => 'primus', 'password' => 'primus', 'nickname' => 'Primus', 'role' => 1],
+            ['username' => 'raymond', 'password' => 'raymond', 'nickname' => 'Raymond', 'role' => 1],
+            ['username' => 'stephen', 'password' => 'stephen', 'nickname' => 'Stephen', 'role' => 1],
+            ['username' => 'rendy', 'password' => 'rendy', 'nickname' => 'Rendy', 'role' => 1],
+            ['username' => 'rio', 'password' => 'rio', 'nickname' => 'Rio', 'role' => 1],
+            ['username' => 'ten', 'password' => 'ten', 'nickname' => 'Ten', 'role' => 1],
+            ['username' => 'huann', 'password' => 'huann', 'nickname' => 'Huann', 'role' => 1],
+            ['username' => 'vianney', 'password' => 'vianney', 'nickname' => 'Vianney', 'role' => 1],
         ];
 
         foreach ($users as $user) {
             DB::table('users')->insert([
                 'username' => $user['username'],
-                'password' => Hash::make($user['password']), // Hash password for security
+                'password' => Hash::make($user['password']),
                 'nickname' => $user['nickname'],
                 'role' => $user['role'],
                 'elo' => 1000,

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Archetype;
 use App\Models\Card;
 use App\Models\Deck;
+use App\Models\GlobalDeck;
+use App\Models\Set;
 use App\Models\Tournament;
 use App\Models\TournamentEntry;
 use App\Models\TournamentMatch;
@@ -16,8 +18,14 @@ class SiteController extends Controller
 {
     public function cards()
     {
-        $cards = Card::all();
-        return view('cards.index', ['cards' => $cards]);
+        // Fetch Sets, eager-load their cards (ordered by number), and paginate 2 Sets per page
+        $sets = Set::with(['cards' => function ($query) {
+                $query->orderByRaw('CAST(number AS UNSIGNED) ASC'); 
+            }])
+            ->orderBy('release_date', 'desc')
+            ->paginate(2); // <-- 2 sets per page as requested
+
+        return view('cards.index', compact('sets')); // Adjust the view path if yours is different
     }
 
     public function cardDetail($id)
@@ -59,8 +67,8 @@ class SiteController extends Controller
                 break;
         }
 
-        // Paginate results (e.g., 12 per page)
-        $tournaments = $query->paginate(12);
+        // THE FIX: Fetch all matching records so DataTables can handle the pagination
+        $tournaments = $query->get();
 
         return view('tournaments.index', compact('tournaments'));
     }
@@ -104,7 +112,11 @@ class SiteController extends Controller
         if (!$deck) {
             return redirect()->route('player.mydecks')->with('error', 'Deck not found.');
         }
-        return view('player.decks.show', compact('deck'));
+        $deckHistory = GlobalDeck::with(['decks.tournamentEntries.tournament'])
+            ->where('id', $deck->global_deck_id)
+            ->first();
+        // dd($deckHistory->decks[1]->tournamentEntries);
+        return view('player.decks.show', compact('deck', 'deckHistory'));
     }
 
     // app/Http/Controllers/ArchetypeController.php

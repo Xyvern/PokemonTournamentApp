@@ -5,7 +5,6 @@
             {{ $match->player1->user->nickname ?? 'Unknown' }}
             <span class="badge badge-pill badge-light border ml-1">{{ $match->player1->points }}pts</span>
         </td>
-
         
         {{-- Player 2 --}}
         <td class="align-middle {{ $match->result_code === 2 ? 'font-weight-bold text-success' : '' }}">
@@ -28,15 +27,20 @@
                 <span class="badge badge-warning">In Progress</span>
             @endif
         </td>
+        
         {{-- Action --}}
         <td class="align-middle">
             @if($match->result_code)
                 <span class="badge badge-success">Completed</span>
             @else
-                @if (Auth::user()->id === $match->player1->user->id || Auth::user()->id === $match->player2->user->id)
+                {{-- THE FIX: Added ($match->player2 && ...) to prevent the crash --}}
+                @if (Auth::user()->id === $match->player1->user->id || ($match->player2 && Auth::user()->id === $match->player2->user->id))
                     <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-success" style="width: 50%">Play</a>
                 @else
-                    <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
+                    {{-- THE FIX: Only show Watch button if Player 2 exists --}}
+                    @if($match->player2)
+                        <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
+                    @endif
                 @endif
             @endif
         </td>

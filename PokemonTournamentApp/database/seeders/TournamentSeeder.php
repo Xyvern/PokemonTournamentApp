@@ -9,150 +9,148 @@ use App\Models\TournamentMatch;
 use App\Models\User;
 use App\Services\EloCalculator;
 use App\Services\SwissPairingGenerator;
+use App\Services\TournamentServices;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str; // <-- ADDED: For UUID generation
+use Illuminate\Support\Str;
 
 class TournamentSeeder extends Seeder
 {
     protected $eloCalculator;
     protected $pairingService;
+    protected $tournamentServices;
 
-    public function run(EloCalculator $eloCalculator, SwissPairingGenerator $pairingService): void
-    {
+    public function run(
+        EloCalculator $eloCalculator, 
+        SwissPairingGenerator $pairingService,
+        TournamentServices $tournamentServices
+    ): void {
+        set_time_limit(0); // <-- Fixes the 10-tournament timeout limit
+        
         $this->eloCalculator = $eloCalculator;
         $this->pairingService = $pairingService;
+        $this->tournamentServices = $tournamentServices;
 
-        // 0. Prerequisites: Ensure Deck ID 1 exists
-        if (!Deck::find(1)) {
-            $dummyUser = User::first() ?? User::factory()->create();
-            DB::table('decks')->insert([
-                'id' => 1,
-                'user_id' => $dummyUser->id,
-                'global_deck_id' => 1,
-                'name' => 'Standard Deck',
-                'created_at' => now(),
-                'updated_at' => now(),
+        $players = User::whereNot('role', 2)->get();
+
+        $this->command->info("--- Generating 50 Completed Tournaments ---");
+        
+        $dateTracker = now()->subDays(50);
+
+        for ($i = 1; $i <= 50; $i++) {
+            // Processing each tournament inside a transaction makes it exponentially faster
+            DB::transaction(function () use ($dateTracker, $players) {
+                $this->generateTournament('completed', clone $dateTracker, $players);
+            });
+            $dateTracker->addDay();
+            if ($i % 10 == 0) $this->command->info("... $i / 50 Completed");
+        }
+
+        $this->command->info("--- Generating 3 Active Tournaments ---");
+        for ($i = 1; $i <= 3; $i++) {
+            DB::transaction(function () use ($players) {
+                $this->generateTournament('active', now()->subHours(rand(1, 5)), $players);
+            });
+        }
+
+        $this->command->info("--- Generating 2 Registration Tournaments ---");
+        for ($i = 1; $i <= 2; $i++) {
+            $this->generateTournament('registration', now()->addDays(rand(1, 5)), $players);
+        }
+
+        $this->command->info("Tournament Seeder finished successfully!");
+    }
+
+    private function generateTournament(string $status, Carbon $date, $allPlayers)
+    {
+        $playerCount = rand(4, 16);
+        $totalRounds = max(3, ceil(log($playerCount, 2))); 
+
+        $tournament = Tournament::create([
+            'name'              => 'Gym Battle - ' . $date->format('Y-m-d'),
+            'start_date'        => $date,
+            'total_rounds'      => $totalRounds,
+            'capacity'          => 16,
+            'registered_player' => $playerCount,
+            'status'            => $status === 'registration' ? 'registration' : 'active' 
+        ]);
+
+        $selectedPlayers = $allPlayers->random($playerCount);
+        
+        foreach ($selectedPlayers as $player) {
+            $deck = Deck::where('user_id', $player->id)->inRandomOrder()->first();
+            TournamentEntry::create([
+                'tournament_id'   => $tournament->id,
+                'user_id'         => $player->id,
+                'deck_id'         => $deck ? $deck->id : 1,
             ]);
         }
 
-        // --- SCENARIO 1: COMPLETED TOURNAMENT (ID 1) ---
-        $this->seedCompletedTournament();
+        if ($status === 'registration') return;
 
-        // --- SCENARIO 2: REGISTRATION TOURNAMENT (ID 2) ---
-        $this->seedRegistrationTournament();
+        $targetRound = ($status === 'completed') ? $totalRounds : rand(1, $totalRounds - 1);
+        $targetRound = max(1, $targetRound);
 
-        // --- SCENARIO 3: ACTIVE TOURNAMENT (ID 3) ---
-        $this->seedActiveTournament();
-    }
+        for ($currentRound = 1; $currentRound <= $targetRound; $currentRound++) {
+            $activeEntries = TournamentEntry::where('tournament_id', $tournament->id)->where('is_dropped', false)->get();
+            $this->pairingService->generatePairings($activeEntries, $currentRound);
 
-    /**
-     * Scenario 1: The original 32-player completed tournament
-     */
-    private function seedCompletedTournament()
-    {
-        $this->command->info("--- Seeding Completed Tournament (ID 1) ---");
+            if ($status === 'active' && $currentRound === $targetRound) {
+                $this->setupPendingMatches($tournament->id, $currentRound);
+                break; 
+            }
 
-        $tournament = Tournament::updateOrCreate(['id' => 1], [
-            'name' => '32-Player Swiss Cup (Completed)',
-            'start_date' => now()->subDays(1),
-            'total_rounds' => 5,
-            'capacity' => 32,
-            'registered_player' => 32,
-            'status' => 'completed'
-        ]);
-
-        // Register 32 Players
-        $this->registerPlayers($tournament, 32);
-
-        // Simulate all 5 Rounds
-        for ($round = 1; $round <= 5; $round++) {
-            $this->command->info("Simulating Round {$round}...");
-            $currentEntries = TournamentEntry::where('tournament_id', $tournament->id)->get();
-            
-            // Generate Pairings
-            $this->pairingService->generatePairings($currentEntries, $round);
-            
-            // Resolve Matches (Set winners, room codes, starting players)
-            $this->simulateRoundResults($tournament, $round);
+            $this->simulateRoundResults($tournament->id, $currentRound);
+            $this->tournamentServices->processRoundStats($tournament->id, $currentRound, $this->eloCalculator);
+            $this->tournamentServices->updateStandingsAndTiebreakers($tournament->id);
         }
 
-        // Calculate Tiebreakers & Final Rank
-        $this->calculateTiebreakers($tournament);
-        $this->assignRanks($tournament);
-    }
-
-    /**
-     * Scenario 2: Tournament in 'Registration' phase with users 1-10
-     */
-    private function seedRegistrationTournament()
-    {
-        $this->command->info("--- Seeding Registration Tournament (ID 2) ---");
-
-        $tournament = Tournament::updateOrCreate(['id' => 2], [
-            'name' => 'Beginner Cup (Registration)',
-            'start_date' => now()->addDays(2),
-            'total_rounds' => 4,
-            'capacity' => 64,
-            'registered_player' => 10,
-            'status' => 'registration' // Status is explicitly registration
-        ]);
-
-        // Register Users 1-10 specifically
-        for ($i = 1; $i <= 10; $i++) {
-            $user = User::find($i) ?? User::factory()->create(['id' => $i, 'name' => "Player {$i}"]);
-            
-            TournamentEntry::updateOrCreate(
-                ['tournament_id' => $tournament->id, 'user_id' => $user->id],
-                [
-                    'deck_id' => 1,
-                    'points' => 0, 'wins' => 0, 'losses' => 0, 'ties' => 0,
-                    'omw_percentage' => 0.00, 'oomw_percentage' => 0.00, 'total_elo_gain' => 0,
-                ]
-            );
+        if ($status === 'completed') {
+            $tournament->status = 'completed';
+            $tournament->save();
+            $this->tournamentServices->processArchetypeStats($tournament->id);
         }
-        $this->command->info("Registered Users 1-10 for Tournament 2.");
     }
 
-    /**
-     * Scenario 3: Active Tournament (Round 3 in progress)
-     */
-    private function seedActiveTournament()
+    private function simulateRoundResults(int $tournamentId, int $roundNumber)
     {
-        $this->command->info("--- Seeding Active Tournament (ID 3) ---");
+        $matches = TournamentMatch::where('tournament_id', $tournamentId)
+            ->where('round_number', $roundNumber)
+            ->with(['player1', 'player2'])
+            ->get();
 
-        $tournament = Tournament::updateOrCreate(['id' => 3], [
-            'name' => 'Mid-Week Grinder (Round 3 Active)',
-            'start_date' => now()->subHours(2),
-            'total_rounds' => 5,
-            'capacity' => 16,
-            'registered_player' => 16,
-            'status' => 'active' // Status is active
-        ]);
+        foreach ($matches as $match) {
+            $roomCode = Str::uuid()->toString();
 
-        // Register 16 Players
-        $this->registerPlayers($tournament, 16);
+            if (!$match->player2_entry_id) {
+                $match->update([
+                    'result_code' => 1,
+                    'room_code' => $roomCode,
+                    'starting_player' => $match->player1->user_id
+                ]);
+                continue;
+            }
 
-        // Simulate Round 1 (Completed)
-        $this->command->info("Simulating Round 1 (Done)...");
-        $entries = TournamentEntry::where('tournament_id', $tournament->id)->get();
-        $this->pairingService->generatePairings($entries, 1);
-        $this->simulateRoundResults($tournament, 1);
+            $rand = rand(1, 100);
+            if ($rand <= 35) $resultCode = 1;
+            elseif ($rand <= 70) $resultCode = 2;
+            else $resultCode = 3;
 
-        // Simulate Round 2 (Completed)
-        $this->command->info("Simulating Round 2 (Done)...");
-        $entries = TournamentEntry::where('tournament_id', $tournament->id)->get();
-        $this->pairingService->generatePairings($entries, 2);
-        $this->simulateRoundResults($tournament, 2);
+            $startingPlayerId = rand(0, 1) ? $match->player1->user_id : $match->player2->user_id;
 
-        // Simulate Round 3 (In Progress - Pairings Generated, No Results)
-        $this->command->info("Generating Round 3 Pairings (Active)...");
-        $entries = TournamentEntry::where('tournament_id', $tournament->id)->get();
-        $this->pairingService->generatePairings($entries, 3);
-        
-        // <-- ADDED: Set Room Codes and Starting Players for the pending Round 3 matches
-        $pendingMatches = TournamentMatch::where('tournament_id', $tournament->id)
-            ->where('round_number', 3)
+            $match->update([
+                'result_code' => $resultCode,
+                'room_code' => $roomCode,
+                'starting_player' => $startingPlayerId
+            ]);
+        }
+    }
+
+    private function setupPendingMatches(int $tournamentId, int $roundNumber)
+    {
+        $pendingMatches = TournamentMatch::where('tournament_id', $tournamentId)
+            ->where('round_number', $roundNumber)
             ->with(['player1', 'player2'])
             ->get();
 
@@ -165,228 +163,6 @@ class TournamentSeeder extends Seeder
                 'room_code' => Str::uuid()->toString(),
                 'starting_player' => $startingPlayer
             ]);
-        }
-
-        // Calculate interim standings/tiebreakers based on R1 & R2
-        $this->calculateTiebreakers($tournament);
-        $this->assignRanks($tournament);
-    }
-
-    /**
-     * Helper: Registers N dummy players
-     */
-    private function registerPlayers(Tournament $tournament, int $count)
-    {
-        for ($i = 1; $i <= $count; $i++) {
-            $user = User::find($i);
-            if (!$user) {
-                $user = User::factory()->create([
-                    'id' => $i,
-                    'name' => "Player {$i}",
-                    'elo' => 1000
-                ]);
-            }
-
-            TournamentEntry::updateOrCreate(
-                ['tournament_id' => $tournament->id, 'user_id' => $user->id],
-                [
-                    'deck_id' => 1,
-                    'points' => 0, 'wins' => 0, 'losses' => 0, 'ties' => 0,
-                    'omw_percentage' => 0.00, 'oomw_percentage' => 0.00, 'total_elo_gain' => 0,
-                ]
-            );
-        }
-    }
-
-    /**
-     * Helper: Sets random winners for a specific round
-     */
-    private function simulateRoundResults(Tournament $tournament, int $round)
-    {
-        $matches = TournamentMatch::where('tournament_id', $tournament->id)
-            ->where('round_number', $round)
-            ->with(['player1.user', 'player2.user', 'player1.deck.archetype', 'player2.deck.archetype'])
-            ->get();
-
-        foreach ($matches as $match) {
-            // <-- ADDED: Base properties for all matches
-            $roomCode = Str::uuid()->toString();
-
-            // Handle Bye
-            if (!$match->player2_entry_id) {
-                $p1Entry = $match->player1;
-                $p1Entry->wins++;
-                $p1Entry->points += 3;
-                $p1Entry->save();
-                $match->update([
-                    'result_code' => 1,
-                    'room_code' => $roomCode,
-                    'starting_player' => $p1Entry->user->id // <-- ADDED
-                ]); 
-                continue;
-            }
-
-            $p1Entry = $match->player1;
-            $p2Entry = $match->player2;
-            $p1User = $p1Entry->user;
-            $p2User = $p2Entry->user;
-
-            // Pick Winner (Bias towards ID 1 for testing consistency, otherwise random)
-            if ($p1User->id === 1) $resultCode = 1;
-            elseif ($p2User->id === 1) $resultCode = 2;
-            else $resultCode = rand(1, 2);
-
-            $winnerString = ($resultCode === 1) ? 'player1' : 'player2';
-            
-            // <-- ADDED: Randomly pick the starting player (User ID)
-            $startingPlayerId = rand(0, 1) ? $p1User->id : $p2User->id;
-
-            // Calculate ELO
-            $eloChange = $this->eloCalculator->eloChange(43, $p1User->elo, $p2User->elo, $winnerString);
-
-            if ($resultCode === 1) {
-                // P1 Wins
-                $p1Entry->wins++;
-                $p1Entry->points += 3;
-                $p1Entry->total_elo_gain += $eloChange;
-                $p1User->matches_won++;
-                $p1User->elo += $eloChange;
-
-                $p2Entry->losses++;
-                $p2Entry->total_elo_gain -= $eloChange;
-                $p2User->matches_lost++;
-                $p2User->elo -= $eloChange;
-
-                // Update Archetypes (if relationship exists)
-                if ($p1Entry->deck && $p1Entry->deck->archetype) $p1Entry->deck->archetype->increment('wins');
-
-            } else {
-                // P2 Wins
-                $p2Entry->wins++;
-                $p2Entry->points += 3;
-                $p2Entry->total_elo_gain += $eloChange;
-                $p2User->matches_won++;
-                $p2User->elo += $eloChange;
-
-                $p1Entry->losses++;
-                $p1Entry->total_elo_gain -= $eloChange;
-                $p1User->matches_lost++;
-                $p1User->elo -= $eloChange;
-
-                if ($p2Entry->deck && $p2Entry->deck->archetype) $p2Entry->deck->archetype->increment('wins');
-            }
-
-            // Global User Stats
-            $p1User->matches_played++;
-            $p2User->matches_played++;
-            
-            // Global Archetype Stats
-            if($p1Entry->deck && $p1Entry->deck->archetype) $p1Entry->deck->archetype->increment('times_played');
-            if($p2Entry->deck && $p2Entry->deck->archetype) $p2Entry->deck->archetype->increment('times_played');
-
-            $p1User->save();
-            $p2User->save();
-            $p1Entry->save();
-            $p2Entry->save();
-
-            $match->update([
-                'result_code' => $resultCode,
-                'elo_gain' => $eloChange,
-                'room_code' => $roomCode, // <-- ADDED
-                'starting_player' => $startingPlayerId // <-- ADDED
-            ]);
-        }
-    }
-
-    /**
-     * Helper: Calculates OMW and OOMW percentages
-     */
-    private function calculateTiebreakers(Tournament $tournament)
-    {
-        $entries = TournamentEntry::where('tournament_id', $tournament->id)->get();
-        
-        // 1. Calculate Match Win % (MW%)
-        $mwPercentages = [];
-        foreach ($entries as $entry) {
-            $totalMatches = $entry->wins + $entry->losses + $entry->ties;
-            // Avoid division by zero
-            $mw = $totalMatches > 0 ? $entry->points / ($totalMatches * 3) : 0;
-            // Rule: Minimum 33%
-            if ($mw < 0.33) $mw = 0.33;
-            $mwPercentages[$entry->id] = $mw;
-        }
-
-        // 2. Calculate OMW%
-        foreach ($entries as $entry) {
-            $opponents = $this->getOpponentIds($entry);
-            
-            $omwSum = 0;
-            if ($opponents->count() > 0) {
-                foreach ($opponents as $oppId) {
-                    $omwSum += $mwPercentages[$oppId] ?? 0.33;
-                }
-                $entry->omw_percentage = $omwSum / $opponents->count();
-            } else {
-                $entry->omw_percentage = 0.33;
-            }
-            $entry->save();
-        }
-
-        // 3. Calculate OOMW%
-        // Refresh entries to get updated OMW%
-        $entries = TournamentEntry::where('tournament_id', $tournament->id)->get();
-        $omwMap = $entries->pluck('omw_percentage', 'id');
-
-        foreach ($entries as $entry) {
-            $opponents = $this->getOpponentIds($entry);
-
-            $oomwSum = 0;
-            if ($opponents->count() > 0) {
-                foreach ($opponents as $oppId) {
-                    $oomwSum += $omwMap[$oppId] ?? 0.33;
-                }
-                $entry->oomw_percentage = $oomwSum / $opponents->count();
-            } else {
-                $entry->oomw_percentage = 0.33;
-            }
-            $entry->save();
-        }
-    }
-
-    private function getOpponentIds($entry)
-    {
-        $opponents = collect();
-        
-        $matches = TournamentMatch::where(function($q) use ($entry) {
-                $q->where('player1_entry_id', $entry->id)
-                  ->orWhere('player2_entry_id', $entry->id);
-            })
-            ->whereNotNull('player2_entry_id') // Exclude byes
-            ->get();
-
-        foreach ($matches as $match) {
-            $oppId = ($match->player1_entry_id == $entry->id) 
-                ? $match->player2_entry_id 
-                : $match->player1_entry_id;
-            $opponents->push($oppId);
-        }
-        
-        return $opponents;
-    }
-
-    private function assignRanks(Tournament $tournament)
-    {
-        $finalStandings = TournamentEntry::where('tournament_id', $tournament->id)
-            ->orderByDesc('points')
-            ->orderByDesc('omw_percentage')
-            ->orderByDesc('oomw_percentage')
-            ->get();
-
-        $rank = 1;
-        foreach ($finalStandings as $standing) {
-            $standing->rank = $rank;
-            $standing->save();
-            $rank++;
         }
     }
 }

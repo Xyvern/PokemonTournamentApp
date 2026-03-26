@@ -54,6 +54,9 @@
     filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5));
 }
 </style>
+
+@section('title', 'Deck Details')
+
 @section('content')
 
 @php
@@ -83,15 +86,17 @@
             @endforeach
         </div>
     </div>
-    @if ($deck->tournamentEntries->isNotEmpty())
+    @if ($deckHistory->decks->isNotEmpty())
         <h4>Deck List Played by</h4>
         <ul>
-            @foreach ($deck->tournamentEntries->whereNotNull('rank') as $entry)
-                @if ($entry->tournament->status == "completed")   
-                    <li>
-                        {{ Number::ordinal($entry->rank) }} Place {{ $entry->tournament->name }}, {{ $entry->user->nickname }}
-                    </li>
-                @endif
+            @foreach ($deckHistory->decks as $deck)
+                @foreach ($deck->tournamentEntries->whereNotNull('rank') as $entry)
+                    @if ($entry->tournament->status == "completed")   
+                        <li>
+                            {{ Number::ordinal($entry->rank) }} Place {{ $entry->tournament->name }}, {{ $entry->user->nickname }}
+                        </li>
+                    @endif
+                @endforeach
             @endforeach
         </ul>
     @endif

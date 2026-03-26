@@ -21,8 +21,23 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // Find the user, INCLUDING deactivated ones
+        $user = User::withTrashed()->where('username', $request->username)->first();
+
+        // Check if user exists and password is correct
+        if ($user && Hash::check($request->password, $user->password)) {
+            
+            // Check if the account is deactivated
+            if ($user->trashed()) {
+                return back()->withErrors([
+                    'username' => 'Your account has been deactivated by an administrator.',
+                ]);
+            }
+
+            // Log them in
+            Auth::login($user);
             $request->session()->regenerate();
+            
             if (Auth::user()->role == 1) {
                 return redirect()->route('player.home');
             } elseif (Auth::user()->role == 2) {

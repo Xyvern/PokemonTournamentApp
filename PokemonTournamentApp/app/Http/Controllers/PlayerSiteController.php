@@ -202,7 +202,7 @@ class PlayerSiteController extends Controller
 
     public function createDeck()
     {
-        $cards = Card::all();
+        $cards = Card::where('is_playable', true)->get();
         return view('player.decks.create', compact('cards'));
     }
 

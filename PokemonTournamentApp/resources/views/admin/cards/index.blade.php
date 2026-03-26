@@ -1,6 +1,6 @@
-@extends('player.layout')
+@extends('admin.layout')
 
-@section('title', 'Cards Collection')
+@section('title', 'Card Database')
 
 @section('content')
 <style>
@@ -18,18 +18,43 @@
     .set-header {
         border-bottom: 2px solid #e9ecef;
         padding-bottom: 10px;
-        margin-top: 10px;
+        margin-top: 30px;
         margin-bottom: 20px;
     }
 </style>
 
-<div style="margin-left: 10vw; margin-top: 2vh; margin-right: 10vw;">
+<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
 
-    {{-- 1. Page Header --}}
-    <div class="row mb-4 align-items-center">
-        <div class="col-12">
-            <h2 class="mb-1 font-weight-bold">Cards Collection</h2>
-            <p class="text-muted mb-0">Browse through the latest Pokémon TCG expansions.</p>
+    {{-- 1. Header & API Sync Panel --}}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h2 class="mb-1 font-weight-bold">Card Database</h2>
+                    <p class="text-muted mb-0">Manage and sync cards from the official Pokémon TCG API.</p>
+                </div>
+                <div class="col-md-5 mt-3 mt-md-0 d-flex align-items-center justify-content-start justify-content-md-end">
+                    {{-- Latest Set Info --}}
+                    <div class="alert alert-light border mb-0 mr-3 d-inline-block text-left shadow-sm">
+                        <small class="text-muted text-uppercase font-weight-bold d-block">Latest Set in Database</small>
+                        @if($latestSet)
+                            <span class="font-weight-bold text-dark">{{ $latestSet->name }}</span> 
+                            <span class="badge badge-primary ml-1">{{ \Carbon\Carbon::parse($latestSet->release_date)->format('M d, Y') }}</span>
+                        @else
+                            <span class="text-danger font-weight-bold">Database is Empty</span>
+                        @endif
+                    </div>
+                    
+                    {{-- The Sync Button --}}
+                    <form action="{{ route('admin.cards.sync') }}" method="POST" class="m-0">
+                        @csrf
+                        <button type="submit" class="btn btn-dark shadow-sm font-weight-bold" onclick="return confirm('This will pull all new sets and cards from the API. This may take a minute. Continue?')">
+                            <i class="fas fa-sync-alt mr-2"></i> Pull New Cards
+                        </button>
+                    </form>
+
+                </div>
+            </div>
         </div>
     </div>
 
@@ -40,7 +65,7 @@
                 @forelse($sets as $set)
                     
                     {{-- The Set Heading --}}
-                    <div class="col-12 set-header {{ $loop->first ? 'mt-2' : 'mt-5' }}">
+                    <div class="col-12 set-header mt-4">
                         <div class="d-flex align-items-center justify-content-between">
                             <h4 class="font-weight-bold mb-0 text-dark">
                                 {{ $set->name }}
@@ -54,9 +79,9 @@
 
                     {{-- The Cards for this Set --}}
                     @forelse($set->cards as $card)
+                        {{-- CHANGED: Updated grid classes to fit more cards per row (e.g., col-xl-1 fits 12 per row on huge screens) --}}
                         <div class="col-xl-1 col-lg-2 col-md-3 col-sm-4 col-4 mb-4 text-center">
-                            {{-- Make sure this route matches your web.php --}}
-                            <a href="{{ route('cards.detail', ['id' => $card->api_id]) }}" class="d-block text-decoration-none">
+                            <a href="{{ route('admin.cards.detail', ['id' => $card->api_id]) }}" class="d-block text-decoration-none">
                                 @php
                                     $imgSrc = $card->images->small ?? 'https://images.pokemontcg.io/'.str_replace('-', '/', $card->api_id).'.png';
                                 @endphp
@@ -65,8 +90,10 @@
                                      alt="{{ $card->name }}" 
                                      class="img-fluid card-hover mb-2"
                                      loading="lazy"
+                                     {{-- CHANGED: Reduced max-width from 245px to 140px --}}
                                      style="width: 100%; max-width: 140px;">
                                 
+                                {{-- CHANGED: Made the text slightly smaller to match the smaller card --}}
                                 <div class="text-truncate font-weight-bold text-dark" style="font-size: 0.8rem;" title="{{ $card->name }}">
                                     {{ $card->name }}
                                 </div>
@@ -75,19 +102,20 @@
                         </div>
                     @empty
                         <div class="col-12 text-center py-3">
-                            <p class="text-muted mb-0">No cards found for this set yet.</p>
+                            <p class="text-muted mb-0">No cards synced for this set yet.</p>
                         </div>
                     @endforelse
 
                 @empty
                     <div class="col-12 text-center py-5">
-                        <h5 class="text-muted">No sets available.</h5>
+                        <h5 class="text-muted">No sets found in the database.</h5>
+                        <p class="text-muted">Click "Pull New Cards" to populate the list.</p>
                     </div>
                 @endforelse
             </div>
         </div>
         
-        {{-- 3. Laravel Backend Pagination Links --}}
+        {{-- 3. Laravel Backend Pagination Links (Now paging through Sets!) --}}
         @if($sets->hasPages())
             <div class="card-footer bg-white border-top-0 pt-3 pb-3">
                 <div class="d-flex justify-content-center">

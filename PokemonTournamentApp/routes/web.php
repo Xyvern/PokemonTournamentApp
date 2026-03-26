@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminController;   
 use App\Http\Controllers\AdminSiteController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PlayerController;
@@ -31,11 +31,10 @@ Route::prefix('tournaments')->name('tournaments.')->group(function () {
     Route::get('/{id}', [SiteController::class, 'tournamentDetail'])->name('detail');
     Route::post('/{id}/register', [PlayerController::class, 'registerTournament'])->name('register');
     Route::post('/{id}/drop', [PlayerController::class, 'dropTournament'])->name('drop');
-    Route::get('{id}/matches', [PlayerController::class, 'fetchRoundMatches'])->name('matches.fetch');
+    Route::get('/{id}/matches', [PlayerController::class, 'fetchRoundMatches'])->name('matches.fetch');
 });
 
 Route::prefix('cards')->name('cards.')->group(function () {
-    // fix batch to prevent overloading, filter ga jalan
     Route::get('/', [SiteController::class, 'cards'])->name('index');
     Route::get('/{id}', [SiteController::class, 'cardDetail'])->name('detail');
 });
@@ -60,14 +59,50 @@ Route::get('/decks/{deck}', [SiteController::class, 'showDeck'])->name('showDeck
 
 // Admin routes
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminSiteController::class, 'adminDashboard'])->name('dashboard');
+    Route::get('/dashboard', [AdminSiteController::class, 'index'])->name('dashboard');
+    Route::get('/unassigned-decks', [AdminSiteController::class, 'unassignedDecks'])->name('unassignedDecks');
+    Route::post('/assign-archetype', [AdminController::class, 'assignArchetype'])->name('assignArchetype');
+    
     Route::prefix('tournaments')->name('tournaments.')->group(function () {
-        Route::get('/', [AdminSiteController::class, 'adminTournaments'])->name('index');
+        // 1. Static Routes (Must go first!)
+        Route::get('/', [AdminSiteController::class, 'tournaments'])->name('index');
         Route::get('/create', [AdminSiteController::class, 'createTournament'])->name('create');
         Route::post('/store', [AdminController::class, 'storeTournament'])->name('store');
+        
+        // 2. Wildcard/Dynamic Routes (Must go after static routes!)
+        Route::get('/{id}', [AdminSiteController::class, 'tournamentDetail'])->name('detail');
         Route::get('/{id}/edit', [AdminSiteController::class, 'editTournament'])->name('edit');
         Route::post('/{id}/update', [AdminController::class, 'updateTournament'])->name('update');
         Route::post('/{id}/delete', [AdminController::class, 'deleteTournament'])->name('delete');
+        
+        // Action Routes
+        Route::post('/{id}/start', [AdminController::class, 'startTournament'])->name('start');
+        Route::post('/{id}/next-round', [AdminController::class, 'generateNextRound'])->name('nextRound');
+        Route::put('/{id}/update-match', [AdminController::class, 'updateMatchResult'])->name('updateMatch');
+        Route::post('/{id}/finalize', [AdminController::class, 'finalizeTournament'])->name('finalize');
+        Route::post('/{id}/drop-player', [AdminController::class, 'dropPlayer'])->name('dropPlayer');
+        
+        // AJAX
+        Route::get('/{id}/matches', [AdminController::class, 'fetchRoundMatches'])->name('matches.fetch');
+    });
+    Route::prefix('archetypes')->name('archetypes.')->group(function () {
+        Route::get('/', [AdminSiteController::class, 'archetypes'])->name('index');
+        Route::get('/create', [AdminSiteController::class, 'createArchetype'])->name('create');
+        Route::get('/{id}', [AdminSiteController::class, 'archetypeDetail'])->name('detail');
+        Route::post('/store', [AdminController::class, 'storeArchetype'])->name('store');
+        Route::get('/{id}/edit', [AdminSiteController::class, 'editArchetype'])->name('edit');
+        Route::post('/{id}/update', [AdminController::class, 'updateArchetype'])->name('update');
+        Route::post('/{id}/delete', [AdminController::class, 'deleteArchetype'])->name('delete');
+    });
+    Route::prefix('cards')->name('cards.')->group(function () {
+        Route::get('/', [AdminSiteController::class, 'cardDatabase'])->name('index');
+        Route::get('/{id}', [AdminSiteController::class, 'cardDetail'])->name('detail');
+        Route::post('/sync', [AdminController::class, 'syncCards'])->name('sync');
+    });
+
+    Route::prefix('players')->name('players.')->group(function () {
+        Route::get('/', [AdminSiteController::class, 'managePlayers'])->name('index');
+        Route::post('/{id}/toggle', [AdminController::class, 'togglePlayerStatus'])->name('toggle');
     });
 });
 

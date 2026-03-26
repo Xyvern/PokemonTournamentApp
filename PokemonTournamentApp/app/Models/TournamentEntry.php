@@ -19,6 +19,7 @@ class TournamentEntry extends Model
         'omw_percentage', 
         'oomw_percentage',
         'total_elo_gain',
+        'is_dropped'
     ];
 
     public function user(): BelongsTo

@@ -3,309 +3,261 @@
 @section('content')
 
 <style>
-.card-list-panel {
-    height: 80vh;
-    overflow-y: auto;
-    border-right: 1px solid #ddd;
+/* Layout Containers */
+.main-wrapper {
+    height: 73vh; 
+    display: flex;
+    gap: 20px;
 }
-.deck-panel {
-    height: 80vh;
-    overflow-y: auto;
+
+.card-list-panel, .deck-panel {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
 }
+
+.card-list-panel { flex: 2; }
+.deck-panel { flex: 1; }
+
+#cardList, #deckBody {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    align-content: flex-start;
+}
+
+.panel-header {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.panel-footer {
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background: #f8f9fa;
+}
+
 .card-image {
     width: 100%;
     border-radius: 6px;
     transition: transform .15s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 .card-image:hover {
     transform: scale(1.05);
     cursor: pointer;
 }
-.deck-item {
-    transition: background .15s ease;
-}
-.deck-item:hover {
-    background: #f1f1f1;
-}
+
+.deck-item { transition: background .15s ease; border-radius: 4px; margin-bottom: 4px; }
+.deck-item:hover { background: #f1f1f1; }
+.ace-spec-item { border-left: 5px solid #d63384 !important; background: #fff0f6 !important; }
 </style>
 
-<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
-    <div class="container-fluid">
-
-    <h3 class="mb-3">Create New Deck</h3>
-
-    <div class="row">
-
-        <!-- LEFT: CARD LIST -->
-        <div class="col-md-8 card-list-panel">
-
-            <div class="d-flex mb-3">
+<div class="main-wrapper" style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+    <div class="card-list-panel">
+        <div class="panel-header">
+            <h4 class="mb-3">Card Database</h4>
+            <div class="d-flex">
                 <input id="searchInput" type="text" class="form-control mr-2" placeholder="Search cards...">
-
-                <select id="typeFilter" class="form-control" style="max-width: 200px;">
+                <select id="typeFilter" class="form-control" style="max-width: 150px;">
                     <option value="">All Types</option>
                     <option value="pokemon">Pokémon</option>
                     <option value="trainer">Trainer</option>
                     <option value="energy">Energy</option>
                 </select>
             </div>
+        </div>
 
-            <div class="row" id="cardList">
-
-                @foreach($cards as $card)
-                    <div class="col-md-2 col-sm-3 col-4 mb-3 card-entry"
-                        data-name="{{ strtolower($card->name) }}"
-                        data-type="{{ strtolower($card->supertype) }}"
-                        data-type-normalized="{{ strtolower(\Illuminate\Support\Str::ascii($card->supertype)) }}"
-                        data-rarity="{{ strtolower($card->rarity ?? '') }}"
+        <div class="row m-0" id="cardList">
+            @foreach($cards as $card)
+                @php
+                    $isAceSpec = $card->subtypes->contains('subtype', 'ACE SPEC');
+                    $isBasic = $card->subtypes->contains('subtype', 'Basic');
+                @endphp
+                <div class="col-md-2 col-sm-3 col-4 mb-3 card-entry"
+                    data-name="{{ strtolower($card->name) }}"
+                    data-type="{{ strtolower(\Illuminate\Support\Str::ascii($card->supertype)) }}"
+                >
+                    <img 
+                        src="{{ $card->images->small }}" 
+                        alt="{{ $card->name }}" 
+                        class="card-image"
+                        onclick="addCard({{ $card->id }}, '{{ addslashes($card->name) }}', '{{ $card->images->small }}', '{{ $card->api_id }}', {{ $isAceSpec ? 'true' : 'false' }}, {{ $isBasic ? 'true' : 'false' }})"
+                        loading="lazy"
                     >
-                        <img 
-                            src="{{ $card->images->small }}" 
-                            alt="{{ $card->name }}" 
-                            class="card-image"
-                            onclick="addCard({{ $card->id }}, '{{ addslashes($card->name) }}', '{{ $card->images->small }}', '{{ $card->api_id }}')"
-                        >
-                    </div>
-                @endforeach
+                </div>
+            @endforeach
+        </div>
 
+        <div class="panel-footer" id="pagination-container"></div>
+    </div>
+
+    <div class="deck-panel">
+        <form action="{{ route('player.storeDeck') }}" method="POST" id="deckForm" style="display: flex; flex-direction: column; height: 100%;">
+            @csrf
+            <div class="panel-header">
+                <div class="form-group mb-0">
+                    <label class="small font-weight-bold">DECK NAME</label>
+                    <input type="text" name="name" class="form-control" placeholder="Deck Name" value="Untitled Deck" required>
+                </div>
+                <h5 class="mt-3 mb-0">Your Deck (<span id="deckCount">0</span>/60)</h5>
             </div>
 
-        </div>
+            <div id="deckBody">
+                <ul class="list-group list-group-flush" id="deckList">
+                    <li class="list-group-item text-muted text-center py-4">Click cards to add them</li>
+                </ul>
+            </div>
 
-        <!-- RIGHT: DECK LIST -->
-        <div class="col-md-4 deck-panel">
-
-            <form action="{{ route('player.storeDeck') }}" method="POST">
-                @csrf
-
-                <div class="form-group">
-                    <label>Deck Name</label>
-                    <input type="text" name="name" class="form-control" placeholder="Enter deck name" value="Untitled Deck" required>
-                </div>
-
-                <h5 class="mt-3">Deck List (<span id="deckCount">0</span>/60)</h5>
-                <ul class="list-group mb-3" id="deckList"></ul>
-
+            <div class="panel-footer">
                 <input type="hidden" name="cards" id="cardsInput">
-
-                <button type="submit" class="btn btn-success btn-block mb-2">
-                    Save Deck
-                </button>
-
-                <button type="button" class="btn btn-info btn-block" onclick="checkLegality()">
-                    Check Legality
-                </button>
-
-            </form>
-
-        </div>
-
+                <button type="submit" class="btn btn-success btn-block mb-2 py-2 font-weight-bold">SAVE DECK</button>
+                <button type="button" class="btn btn-outline-info btn-block btn-sm" onclick="checkLegality()">CHECK LEGALITY</button>
+            </div>
+        </form>
     </div>
 </div>
 
-</div>
-
 <script>
-// ========== DECK LOGIC (unchanged) ==========
-let deck = {}; // cardID => { qty, name, img, rarity }
+let deck = {}; 
+const allCards = Array.from(document.querySelectorAll(".card-entry"));
+let filteredCards = [...allCards]; 
+let currentPage = 1;
+const pageSize = 48; 
 
 function isBasicEnergy(name) {
-    return /^basic\s.+\senergy$/i.test(name.trim());
+    return /fire|water|grass|lightning|psychic|fighting|darkness|metal|fairy/i.test(name) && /energy/i.test(name) && !/special/i.test(name);
 }
 
-function addCard(id, name, img, api_id) {
-    if (!deck[id]) {
-        deck[id] = { qty: 1, name: name, img: img, api_id: api_id };
-    } else {
-        if (!isBasicEnergy(name) && deck[id].qty >= 4) {
-            return alert(`You cannot have more than 4 copies of "${name}".`);
-        }
-        deck[id].qty++;
+function addCard(id, name, img, api_id, isAceSpec, isBasic) {
+    const currentTotal = Object.values(deck).reduce((sum, c) => sum + c.qty, 0);
+    if (currentTotal >= 60) return alert("Deck is full (60/60)!");
+
+    // 1. ACE SPEC RULE: Only one per deck
+    if (isAceSpec) {
+        const hasAceSpec = Object.values(deck).some(c => c.isAceSpec);
+        if (hasAceSpec) return alert("❌ Illegal: You can only have ONE ACE SPEC card in your deck.");
     }
 
+    // 2. 4-COPY RULE: (Except Basic Energy)
     if (!isBasicEnergy(name)) {
-        let totalSameName = countCardsByName(name);
-        if (totalSameName > 4) {
-            deck[id].qty--;
-            if (deck[id].qty <= 0) delete deck[id];
-            return alert(`You cannot have more than 4 total copies of "${name}".`);
-        }
+        const existingQty = Object.values(deck)
+            .filter(c => c.name.toLowerCase() === name.toLowerCase())
+            .reduce((sum, c) => sum + c.qty, 0);
+        
+        if (existingQty >= 4) return alert(`❌ Illegal: Max 4 copies of "${name}" allowed.`);
     }
 
-    if (totalCards() > 60) {
-        deck[id].qty--;
-        if (deck[id].qty <= 0) delete deck[id];
-        return alert("Deck cannot exceed 60 cards.");
+    // Add to state
+    if (!deck[id]) {
+        deck[id] = { id, name, img, api_id, isAceSpec, isBasic, qty: 1 };
+    } else {
+        deck[id].qty++;
     }
 
     renderDeck();
 }
 
 function removeCard(id) {
-    if (!deck[id]) return;
-    deck[id].qty--;
-    if (deck[id].qty <= 0) delete deck[id];
-    renderDeck();
-}
-
-function totalCards() {
-    return Object.values(deck).reduce((sum, c) => sum + c.qty, 0);
-}
-
-function countCardsByName(name) {
-    let total = 0;
-    for (let key in deck) {
-        if (deck[key].name.toLowerCase() === name.toLowerCase()) {
-            total += deck[key].qty;
-        }
+    if (deck[id]) {
+        deck[id].qty--;
+        if (deck[id].qty <= 0) delete deck[id];
+        renderDeck();
     }
-    return total;
 }
 
 function renderDeck() {
-    let list = document.getElementById("deckList");
+    const list = document.getElementById("deckList");
     list.innerHTML = "";
+    let total = 0;
 
-    for (let id in deck) {
-        let item = deck[id];
-
-        list.innerHTML += `
-            <li class="list-group-item deck-item d-flex justify-content-between align-items-center">
-                <div>
-                    <img src="${item.img}" style="height:40px; margin-right:8px;">
-                    <strong>x${item.qty}</strong> - ${item.name}
-                </div>
-                <button class="btn btn-sm btn-danger" onclick="removeCard(${id})">-</button>
-            </li>
-        `;
+    const items = Object.entries(deck).sort((a,b) => a[1].name.localeCompare(b[1].name));
+    
+    if (items.length === 0) {
+        list.innerHTML = '<li class="list-group-item text-muted text-center py-4">Click cards to add them</li>';
     }
 
-    document.getElementById("deckCount").innerText = totalCards();
+    items.forEach(([id, item]) => {
+        total += item.qty;
+        list.innerHTML += `
+            <li class="list-group-item deck-item d-flex justify-content-between align-items-center p-2 ${item.isAceSpec ? 'ace-spec-item' : ''}">
+                <div class="d-flex align-items-center">
+                    <img src="${item.img}" style="height:45px; margin-right:10px;">
+                    <div>
+                        <strong>x${item.qty}</strong> <br>
+                        <small>${item.name}${item.isAceSpec ? ' <span class="badge badge-danger">ACE</span>' : ''}</small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm text-danger" onclick="removeCard(${id})">&times;</button>
+            </li>`;
+    });
+
+    document.getElementById("deckCount").innerText = total;
     document.getElementById("cardsInput").value = JSON.stringify(deck);
 }
 
 function checkLegality() {
+    const deckArray = Object.values(deck);
+    const total = deckArray.reduce((sum, c) => sum + c.qty, 0);
 
-    if (totalCards() !== 60) {
-        return alert("❌ Deck must contain exactly 60 cards.");
+    if (total !== 60) {
+        return alert(`❌ Illegal: Deck has ${total} cards. Exactly 60 required.`);
     }
 
-    let nameCounts = {};
-    for (let id in deck) {
-        let item = deck[id];
-        let name = item.name.toLowerCase();
-
-        if (!nameCounts[name]) nameCounts[name] = 0;
-        nameCounts[name] += item.qty;
+    // 1. BASIC POKEMON CHECK: Must have at least 1
+    const hasBasic = deckArray.some(c => c.isBasic);
+    if (!hasBasic) {
+        return alert("❌ Illegal: Deck must contain at least one Basic Pokémon.");
     }
 
-    for (let name in nameCounts) {
-        if (isBasicEnergy(name)) continue;
-        if (nameCounts[name] > 4) {
-            return alert(`❌ Illegal deck: More than 4 copies of "${name}".`);
-        }
+    // 2. ACE SPEC CHECK: Max 1
+    const aceCount = deckArray.filter(c => c.isAceSpec).reduce((sum, c) => sum + c.qty, 0);
+    if (aceCount > 1) {
+        return alert("❌ Illegal: Multiple ACE SPEC cards detected.");
     }
 
-    alert("✔ Deck is legal!");
+    alert("✔ Deck is legal! At least 1 Basic Pokémon found and 60/60 cards.");
 }
 
-// =============================================
-// ============ FILTER + PAGINATION ============
-// =============================================
-
-// All cards collected from HTML
-let allCards = Array.from(document.querySelectorAll(".card-entry"));
-
-let currentPage = 1;
-const pageSize = 100;
-
-// Normalize helper
-function normalize(str) {
-    return str
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/\s+/g, "");
-}
-
-// Apply search + filter + pagination
 function filterCards() {
-    let search = document.getElementById("searchInput").value.toLowerCase();
-    let type = normalize(document.getElementById("typeFilter").value);
-
-    // Filter first
-    let visibleCards = allCards.filter(card => {
-        let matchesSearch = card.dataset.name.includes(search);
-
-        let cardType = card.dataset.typeNormalized || normalize(card.dataset.type);
-        let matchesType = !type || cardType === type;
-
-        return matchesSearch && matchesType;
-    });
-
-    // Store filtered results
-    filteredCards = visibleCards;
-
+    const search = document.getElementById("searchInput").value.toLowerCase();
+    const type = document.getElementById("typeFilter").value.toLowerCase();
+    filteredCards = allCards.filter(card => card.dataset.name.includes(search) && (!type || card.dataset.type === type));
     currentPage = 1;
     renderPage();
 }
 
-let filteredCards = allCards;
-
-// =========== PAGINATION LOGIC ===========
 function renderPage() {
-    let start = (currentPage - 1) * pageSize;
-    let end = start + pageSize;
-    let paginated = filteredCards.slice(start, end);
-
-    // Hide all cards
-    allCards.forEach(c => (c.style.display = "none"));
-
-    // Show only current page
-    paginated.forEach(c => (c.style.display = ""));
-
+    const start = (currentPage - 1) * pageSize;
+    const paginated = filteredCards.slice(start, start + pageSize);
+    allCards.forEach(c => c.style.display = "none");
+    paginated.forEach(c => c.style.display = "block");
+    document.getElementById("cardList").scrollTop = 0;
     renderPaginationControls();
 }
 
 function renderPaginationControls() {
-    let totalPages = Math.ceil(filteredCards.length / pageSize);
-    let pagination = document.getElementById("pagination");
-
-    pagination.innerHTML = `
-        <div class="d-flex justify-content-center mt-3 gap-3">
-            <button class="btn btn-sm btn-primary" 
-                onclick="prevPage()" 
-                ${currentPage === 1 ? "disabled" : ""}>
-                Prev
-            </button>
-
-            <span class="align-self-center">Page ${currentPage} / ${totalPages}</span>
-
-            <button class="btn btn-sm btn-primary" 
-                onclick="nextPage()" 
-                ${currentPage === totalPages ? "disabled" : ""}>
-                Next
-            </button>
-        </div>
-    `;
+    const totalPages = Math.ceil(filteredCards.length / pageSize);
+    const container = document.getElementById("pagination-container");
+    if (totalPages <= 1) { container.innerHTML = ""; return; }
+    container.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center">
+            <button type="button" class="btn btn-outline-primary btn-sm mx-2" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+            <span class="small">Page <strong>${currentPage}</strong> of ${totalPages}</span>
+            <button type="button" class="btn btn-outline-primary btn-sm mx-2" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+        </div>`;
 }
 
-function nextPage() {
-    currentPage++;
-    renderPage();
-}
+function changePage(step) { currentPage += step; renderPage(); }
 
-function prevPage() {
-    currentPage--;
-    renderPage();
-}
-
-// Initial load
-renderPage();
-
-document.getElementById("searchInput").addEventListener("input", filterCards);
-document.getElementById("typeFilter").addEventListener("change", filterCards);
+document.addEventListener("DOMContentLoaded", () => {
+    filterCards();
+    document.getElementById("searchInput").addEventListener("input", filterCards);
+    document.getElementById("typeFilter").addEventListener("change", filterCards);
+});
 </script>
-
-
 @endsection
