@@ -107,6 +107,11 @@
                             <a class="dropdown-item" href="{{ route('player.mydecks') }}">
                                 <i class="fas fa-layer-group mr-2 text-muted"></i> My Decks
                             </a>
+                            @if(!auth()->user()->isPremium())
+                                <a class="dropdown-item" href="{{ route('player.upgrade') }}">
+                                    <i class="fas fa-crown mr-2 text-warning"></i> Upgrade to Premium
+                                </a>
+                            @endif
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item text-danger" href="{{ route('logout') }}"
                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">

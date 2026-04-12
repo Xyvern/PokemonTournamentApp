@@ -19,7 +19,55 @@ class AdminSiteController extends Controller
 {
     public function index()
     {
-        return view('admin.dashboard');
+        // 1. Top-Level Metrics
+        $stats = [
+            'total_players' => User::where('role', 1)->count(),
+            'completed_tournaments' => Tournament::where('status', 'completed')->count(),
+            'total_archetypes' => Archetype::count(),
+            'total_decks' => Deck::count(), 
+        ];
+
+        // 2. Chart Data: Most Popular Archetypes (Top 5)
+        $popularArchetypes = Archetype::orderBy('times_played', 'desc')
+            ->take(5)
+            ->get(['name', 'times_played']);
+            
+        $popularChartLabels = $popularArchetypes->pluck('name');
+        $popularChartData = $popularArchetypes->pluck('times_played');
+
+        // 3. Chart Data: Highest Win Rates (Minimum 5 games played to filter outliers)
+        $winRateArchetypes = Archetype::where('times_played', '>=', 5)
+            ->orderBy('wins', 'desc') // Assuming you calculate win_rate on the fly, otherwise order by 'win_rate'
+            ->get()
+            ->sortByDesc(function($arch) {
+                return $arch->times_played > 0 ? ($arch->wins / $arch->times_played) * 100 : 0;
+            })
+            ->take(5);
+
+        $winRateLabels = $winRateArchetypes->pluck('name');
+        $winRateData = $winRateArchetypes->map(function($arch) {
+            return $arch->times_played > 0 ? round(($arch->wins / $arch->times_played) * 100) : 0;
+        })->values();
+
+        // 4. Chart Data: Tournament Attendance (Last 6 Tournaments)
+        $recentTournaments = Tournament::where('status', 'completed')
+            ->orderBy('start_date', 'desc')
+            ->take(6)
+            ->get()
+            ->reverse() // Reverse so the oldest is on the left of the chart
+            ->values();
+
+        $attendanceLabels = $recentTournaments->pluck('name')->map(function($name) {
+            return \Illuminate\Support\Str::limit($name, 15); // Truncate long names for the chart
+        });
+        $attendanceData = $recentTournaments->pluck('registered_player');
+
+        return view('admin.dashboard', compact(
+            'stats', 
+            'popularChartLabels', 'popularChartData', 
+            'winRateLabels', 'winRateData', 
+            'attendanceLabels', 'attendanceData'
+        ));
     }
 
     public function tournaments(Request $request)

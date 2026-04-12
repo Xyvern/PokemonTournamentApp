@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('nickname');
             $table->tinyInteger('role')->default(1)->comment('1 = player, 2 = admin');
+            $table->timestamp('premium_until')->nullable();
             $table->integer('elo')->default(1000);
             $table->integer('matches_played')->default(0);
             $table->integer('matches_won')->default(0);

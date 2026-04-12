@@ -27,15 +27,27 @@ class User extends Authenticatable
         'matches_played',
         'matches_won',
         'matches_lost',
+        'premium_until',
     ];
 
     protected $hidden = [
         'password',
     ];
 
+    protected $casts = [
+        'password' => 'hashed',
+        'premium_until' => 'datetime',
+    ];
+
     public $timestamps = true;
 
     protected $dates = ['deleted_at'];
+
+    public function isPremium()
+    {
+        // If the column is null, or the date has passed, they are not premium.
+        return $this->premium_until && $this->premium_until->isFuture();
+    }
 
     public function decks()
     {

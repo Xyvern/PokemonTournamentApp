@@ -21,7 +21,33 @@
     @else
         @include('admin.navbar')
     @endif
+    @if(!auth()->check() || !auth()->user()->isPremium())
+        <div class="ad-container text-center bg-white p-3 rounded shadow-sm border mb-4" style="position: relative; overflow: hidden;">
+            
+            {{-- Faint label at the top --}}
+            <small class="text-muted d-block mb-2 font-weight-bold" style="letter-spacing: 1px; font-size: 0.7rem;">SPONSORED</small>
 
+            {{-- LOCALHOST / ADBLOCK FALLBACK (Sits behind the ad) --}}
+            <div class="ad-fallback d-flex flex-column align-items-center justify-content-center w-100 position-absolute" style="top: 0; left: 0; height: 100%; z-index: 0; opacity: 0.1; pointer-events: none;">
+                <i class="fas fa-ad fa-4x mb-2"></i>
+                <span class="font-weight-bold">Ad Space</span>
+            </div>
+
+            {{-- THE ACTUAL GOOGLE AD (Sits on top) --}}
+            <div style="position: relative; z-index: 1; height: 100px;">
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+                <ins class="adsbygoogle"
+                    style="display:block; height:100px;" 
+                    data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                    data-ad-slot="XXXXXXXXXX"
+                    data-ad-format="horizontal" 
+                    data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+        </div>
+    @endif
     {{-- Main Content --}}
     <div class="flex-grow-1">
         @yield('content')

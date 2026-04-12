@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;   
 use App\Http\Controllers\AdminSiteController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerSiteController;
 use App\Http\Controllers\SiteController;
@@ -48,7 +49,7 @@ Route::prefix('player')->name('player.')->group(function () {
     Route::get('/home', [PlayerSiteController::class, 'playerHome'])->name('home');
     Route::get('/leaderboard', [PlayerSiteController::class, 'leaderboard'])->name('leaderboard');
     Route::get('/profile/{id}', [PlayerSiteController::class, 'playerProfile'])->name('profile');
-
+    Route::get('/upgrade', [PlayerSiteController::class, 'upgrade'])->name('upgrade');
     // check lagi decknya jalan ato ga, filter ga jalan, jangan overload kartu
     Route::get('/my-decks', [PlayerSiteController::class, 'myDecks'])->name('mydecks');
     Route::get('/decks/create', [PlayerSiteController::class, 'createDeck'])->name('createDeck');
@@ -116,6 +117,7 @@ Route::get('/play', function (Request $request) {
     return view('game.play'); 
 })->middleware('auth'); // Ensure they are logged in!
 
+Route::post('/midtrans/callback', [PaymentController::class, 'callback']);
 // Route::get('/export-all-cards-combined', function () {
 //     // 1. Setup environment (Processing thousands of cards requires more resources)
 //     ini_set('memory_limit', '-1');

@@ -13,6 +13,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class PlayerSiteController extends Controller
 {
@@ -229,5 +231,29 @@ class PlayerSiteController extends Controller
             return redirect()->route('player.mydecks')->with('error', 'Deck not found.');
         }
         return view('player.decks.show', compact('deck'));
+    }
+
+    public function upgrade()
+    {
+        Config::$serverKey = config('services.midtrans.server_key');
+        Config::$clientKey = config('services.midtrans.client_key');
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'PREM-' . Auth::id() . '-' . time(),
+                'gross_amount' => 50000, // Price in IDR
+            ],
+            'customer_details' => [
+                'first_name' => Auth::user()->nickname,
+                // Make sure your users table actually has an email column, 
+                // or remove this line if they log in strictly with username!
+                'email' => Auth::user()->email ?? 'player@example.com', 
+            ],
+        ];
+
+        $snapToken = Snap::getSnapToken($params);
+
+        // Pass the token to the view
+        return view('player.upgrade', compact('snapToken'));
     }
 }
