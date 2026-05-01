@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'midtrans/callback', // Ignore CSRF for our webhook
         ]);
+        $middleware->alias([
+            'block.admin' => \App\Http\Middleware\BlockAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

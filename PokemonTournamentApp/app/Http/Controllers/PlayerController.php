@@ -184,4 +184,29 @@ class PlayerController extends Controller
         return redirect()->route('tournaments.detail', $id)
             ->with('success', 'You have successfully registered for the tournament!');
     }
+
+    public function updateProfile(Request $request)
+    {
+        // 1. Validate the incoming data
+        $request->validate([
+            'nickname' => 'required|string|max:255',
+            // Password is optional (nullable), but if provided, must match the confirmation box
+            'password' => 'nullable|string|min:8|confirmed', 
+        ]);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        
+        // 2. Update Nickname
+        $user->nickname = $request->nickname;
+        
+        // 3. Update Password ONLY if they typed a new one
+        if ($request->filled('password')) {
+            $user->password = bcrypt($request->password);
+        }
+        
+        $user->save();
+
+        // 4. Send them back to their profile with a success message
+        return redirect()->route('player.profile', $user->id)->with('success', 'Profile updated successfully!');
+    }
 }

@@ -128,12 +128,22 @@
                     <div class="card-body">
                         @if($tournament->status === 'registration')
                             <p class="small text-muted mb-3">Registration is currently open. Once ready, generate the first round of pairings.</p>
+                            
                             <form action="{{ route('admin.tournaments.start', $tournament->id) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="btn btn-success btn-block mb-3">
                                     Start Tournament (Round 1)
                                 </button>
                             </form>
+
+                            {{-- NEW: Cancel Tournament Button --}}
+                            <form action="{{ route('admin.tournaments.cancel', $tournament->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this tournament? All players will be dropped and the tournament will be closed.');">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-secondary btn-block mb-3">
+                                    Cancel Tournament
+                                </button>
+                            </form>
+
                         @elseif($tournament->status === 'active')
                             <p class="small text-muted mb-3">Ensure all match results are reported before proceeding to the next round.</p>
                             <form action="{{ route('admin.tournaments.nextRound', $tournament->id) }}" method="POST">
@@ -148,10 +158,12 @@
                                     Finalize Tournament
                                 </button>
                             </form>
+                        @endif
+
+                        {{-- CHANGED: Moved Drop Player out so it works in both Registration and Active states --}}
+                        @if($tournament->status !== 'completed')
                             <hr>
-                            
-                            {{-- Drop Player Button (Opens Modal) --}}
-                            <button type="button" class="btn btn-outline-danger btn-block" data-toggle="modal" data-target="#dropPlayerModal" {{ $tournament->status === 'completed' ? 'disabled' : '' }}>
+                            <button type="button" class="btn btn-outline-danger btn-block" data-toggle="modal" data-target="#dropPlayerModal">
                                 Drop Player
                             </button>
                         @endif

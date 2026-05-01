@@ -21,27 +21,25 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        // Find the user, INCLUDING deactivated ones
         $user = User::withTrashed()->where('username', $request->username)->first();
 
-        // Check if user exists and password is correct
         if ($user && Hash::check($request->password, $user->password)) {
             
-            // Check if the account is deactivated
             if ($user->trashed()) {
                 return back()->withErrors([
                     'username' => 'Your account has been deactivated by an administrator.',
                 ]);
             }
 
-            // Log them in
             Auth::login($user);
             $request->session()->regenerate();
             
             if (Auth::user()->role == 1) {
-                return redirect()->route('player.home');
+                // ADDED SUCCESS TOAST
+                return redirect()->route('player.home')->with('success', 'Welcome back, ' . $user->nickname . '!');
             } elseif (Auth::user()->role == 2) {
-                return redirect()->route('admin.dashboard');
+                // ADDED SUCCESS TOAST
+                return redirect()->route('admin.dashboard')->with('success', 'Admin login successful.');
             }
         }
 
@@ -75,7 +73,9 @@ class AuthController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        return redirect('/');
+        
+        // ADDED SUCCESS TOAST
+        return redirect('/login')->with('success', 'Account created successfully! Please log in.');
     }
 
     public function logout(Request $request)
@@ -83,6 +83,8 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/login');
+        
+        // ADDED SUCCESS TOAST
+        return redirect('/login')->with('success', 'You have been successfully logged out.');
     }
 }

@@ -61,6 +61,19 @@ class UserSeeder extends Seeder
             ['username' => 'ten', 'password' => 'ten', 'nickname' => 'Ten', 'role' => 1],
             ['username' => 'huann', 'password' => 'huann', 'nickname' => 'Huann', 'role' => 1],
             ['username' => 'vianney', 'password' => 'vianney', 'nickname' => 'Vianney', 'role' => 1],
+            ['username' => 'steve', 'password' => 'steve', 'nickname' => 'Steve', 'role' => 1],
+            ['username' => 'christian', 'password' => 'christian', 'nickname' => 'Christian', 'role' => 1],
+            ['username' => 'ardy', 'password' => 'ardy', 'nickname' => 'Ardy', 'role' => 1],
+            ['username' => 'richard', 'password' => 'richard', 'nickname' => 'Richard Tan', 'role' => 1],
+            ['username' => 'zulfan', 'password' => 'zulfan', 'nickname' => 'Zulfan', 'role' => 1],
+            ['username' => 'hiya', 'password' => 'hiya', 'nickname' => 'Hiya', 'role' => 1],
+            ['username' => 'samjo', 'password' => 'samjo', 'nickname' => 'Samjo', 'role' => 1],
+            ['username' => 'ryan', 'password' => 'ryan', 'nickname' => 'Ryan', 'role' => 1],
+            ['username' => 'diaz', 'password' => 'diaz', 'nickname' => 'Diaz', 'role' => 1],
+            ['username' => 'kenneth', 'password' => 'kenneth', 'nickname' => 'Kenneth', 'role' => 1],
+            ['username' => 'justin', 'password' => 'justin', 'nickname' => 'Justin', 'role' => 1],
+            ['username' => 'garren', 'password' => 'garren', 'nickname' => 'Garren', 'role' => 1],
+            ['username' => 'owen', 'password' => 'owen', 'nickname' => 'Owen', 'role' => 1],
         ];
 
         foreach ($users as $user) {

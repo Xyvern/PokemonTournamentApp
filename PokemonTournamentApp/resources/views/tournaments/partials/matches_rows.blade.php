@@ -1,5 +1,7 @@
 @forelse($matches as $match)
-    <tr class="{{ Auth::user()->id === $match->player1->user->id || ($match->player2 && Auth::user()->id === $match->player2->user->id) ? 'table-warning' : '' }}">
+    {{-- Guest-Proof Row Highlight --}}
+    <tr class="{{ isset($myEntry) && ($myEntry->id === $match->player1_entry_id || $myEntry->id === $match->player2_entry_id) ? 'table-warning' : '' }}">
+        
         {{-- Player 1 --}}
         <td class="align-middle {{ $match->result_code === 1 ? 'font-weight-bold text-success' : '' }}">
             {{ $match->player1->user->nickname ?? 'Unknown' }}
@@ -9,10 +11,10 @@
         {{-- Player 2 --}}
         <td class="align-middle {{ $match->result_code === 2 ? 'font-weight-bold text-success' : '' }}">
             @if($match->player2)
-            {{ $match->player2->user->nickname ?? 'Unknown' }}
-            <span class="badge badge-pill badge-light border ml-1">{{ $match->player2->points }}pts</span>
+                {{ $match->player2->user->nickname ?? 'Unknown' }}
+                <span class="badge badge-pill badge-light border ml-1">{{ $match->player2->points }}pts</span>
             @else
-            <span class="text-muted font-italic">Bye</span>
+                <span class="text-muted font-italic">Bye</span>
             @endif
         </td>
 
@@ -33,11 +35,11 @@
             @if($match->result_code)
                 <span class="badge badge-success">Completed</span>
             @else
-                {{-- THE FIX: Added ($match->player2 && ...) to prevent the crash --}}
-                @if (Auth::user()->id === $match->player1->user->id || ($match->player2 && Auth::user()->id === $match->player2->user->id))
+                {{-- THE FIX: Safe check using $myEntry instead of Auth::user() --}}
+                @if (isset($myEntry) && ($myEntry->id === $match->player1_entry_id || $myEntry->id === $match->player2_entry_id))
                     <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-success" style="width: 50%">Play</a>
                 @else
-                    {{-- THE FIX: Only show Watch button if Player 2 exists --}}
+                    {{-- Only show Watch button if Player 2 exists (You can't watch a 'Bye') --}}
                     @if($match->player2)
                         <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
                     @endif

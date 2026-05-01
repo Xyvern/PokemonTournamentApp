@@ -82,7 +82,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('admin.unassignedDecks') }}" class="nav-link px-3 {{ request()->routeIs('admin.unassigned-decks') ? 'active font-weight-bold text-white' : '' }}">
+                    <a href="{{ route('admin.unassignedDecks') }}" class="nav-link px-3 {{ request()->routeIs('admin.unassignedDecks') ? 'active font-weight-bold text-white' : '' }}">
                         Unassigned Decks
                     </a>
                 </li>

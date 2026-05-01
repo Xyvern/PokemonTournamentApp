@@ -29,19 +29,41 @@
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
             <div class="row align-items-center">
-                <div class="col-md-7">
+                
+                {{-- Left: Titles --}}
+                <div class="col-md-4 mb-3 mb-md-0">
                     <h2 class="mb-1 font-weight-bold">Card Database</h2>
                     <p class="text-muted mb-0">Manage and sync cards from the official Pokémon TCG API.</p>
                 </div>
-                <div class="col-md-5 mt-3 mt-md-0 d-flex align-items-center justify-content-start justify-content-md-end">
+
+                {{-- Middle: NEW Search Bar --}}
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <form action="{{ url()->current() }}" method="GET" class="m-0">
+                        <div class="input-group shadow-sm">
+                            <input type="text" name="search" class="form-control border-light" placeholder="Search for a Pokémon..." value="{{ request('search') }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                @if(request('search'))
+                                    <a href="{{ url()->current() }}" class="btn btn-outline-secondary" title="Clear Search">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Right: Sync & Info --}}
+                <div class="col-md-4 d-flex align-items-center justify-content-md-end">
                     {{-- Latest Set Info --}}
-                    <div class="alert alert-light border mb-0 mr-3 d-inline-block text-left shadow-sm">
-                        <small class="text-muted text-uppercase font-weight-bold d-block">Latest Set in Database</small>
+                    <div class="alert alert-light border mb-0 mr-3 d-inline-block text-left shadow-sm py-1 px-2">
+                        <small class="text-muted text-uppercase font-weight-bold d-block" style="font-size: 0.65rem;">Latest Set</small>
                         @if($latestSet)
-                            <span class="font-weight-bold text-dark">{{ $latestSet->name }}</span> 
-                            <span class="badge badge-primary ml-1">{{ \Carbon\Carbon::parse($latestSet->release_date)->format('M d, Y') }}</span>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.85rem;">{{ $latestSet->name }}</span> 
                         @else
-                            <span class="text-danger font-weight-bold">Database is Empty</span>
+                            <span class="text-danger font-weight-bold" style="font-size: 0.85rem;">Empty</span>
                         @endif
                     </div>
                     
@@ -49,11 +71,11 @@
                     <form action="{{ route('admin.cards.sync') }}" method="POST" class="m-0">
                         @csrf
                         <button type="submit" class="btn btn-dark shadow-sm font-weight-bold" onclick="return confirm('This will pull all new sets and cards from the API. This may take a minute. Continue?')">
-                            <i class="fas fa-sync-alt mr-2"></i> Pull New Cards
+                            <i class="fas fa-sync-alt"></i> <span class="d-none d-lg-inline ml-1">Pull New</span>
                         </button>
                     </form>
-
                 </div>
+
             </div>
         </div>
     </div>

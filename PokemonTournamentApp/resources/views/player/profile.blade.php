@@ -59,6 +59,11 @@
             {{-- Left: User Info & Rank --}}
             <div class="col-md-4 text-center text-md-left border-right">
                 <h1 class="font-weight-bold mb-0">{{ $user->nickname }}</h1>
+                @if($user->isPremium())
+                    <span class="badge badge-warning text-dark"><i class="fas fa-crown"></i> Premium</span>
+                @else
+                    <span class="badge badge-secondary">Standard</span>
+                @endif
                 <p class="text-muted mb-3">Joined {{ $user->created_at->format('M Y') }}</p>
                 
                 {{-- ELO Display --}}
@@ -76,8 +81,8 @@
 
                 @if($isOwnProfile)
                     <div class="mt-3">
-                        <a href="#" class="btn btn-outline-dark btn-sm rounded-pill px-4">
-                            <i class="fas fa-cog mr-1"></i> Edit Profile
+                        <a href="{{ route('player.editProfile') }}" class="btn btn-outline-dark btn-sm rounded-pill px-4">
+                            <i class="fas fa-edit mr-1"></i> Edit Profile
                         </a>
                     </div>
                 @endif

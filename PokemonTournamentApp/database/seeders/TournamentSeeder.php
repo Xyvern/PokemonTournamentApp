@@ -26,7 +26,7 @@ class TournamentSeeder extends Seeder
         SwissPairingGenerator $pairingService,
         TournamentServices $tournamentServices
     ): void {
-        set_time_limit(0); // <-- Fixes the 10-tournament timeout limit
+        set_time_limit(0); 
         
         $this->eloCalculator = $eloCalculator;
         $this->pairingService = $pairingService;
@@ -34,29 +34,39 @@ class TournamentSeeder extends Seeder
 
         $players = User::whereNot('role', 2)->get();
 
-        $this->command->info("--- Generating 50 Completed Tournaments ---");
+        $this->command->info("--- Generating Completed Tournaments (Fridays: June 2025 - Apr 2026) ---");
         
-        $dateTracker = now()->subDays(50);
+        // Start: First Friday of June 2025
+        $dateTracker = Carbon::parse('2025-06-06');
+        // End: Last Friday before today (April 20, 2026)
+        $endDate = Carbon::parse('2026-04-17'); 
+        $completedCount = 0;
 
-        for ($i = 1; $i <= 50; $i++) {
-            // Processing each tournament inside a transaction makes it exponentially faster
+        while ($dateTracker->lte($endDate)) {
             DB::transaction(function () use ($dateTracker, $players) {
                 $this->generateTournament('completed', clone $dateTracker, $players);
             });
-            $dateTracker->addDay();
-            if ($i % 10 == 0) $this->command->info("... $i / 50 Completed");
+            $dateTracker->addWeek(); // Move to the next Friday
+            $completedCount++;
+            
+            if ($completedCount % 10 == 0) {
+                $this->command->info("... {$completedCount} Tournaments Completed");
+            }
         }
 
-        $this->command->info("--- Generating 3 Active Tournaments ---");
-        for ($i = 1; $i <= 3; $i++) {
-            DB::transaction(function () use ($players) {
-                $this->generateTournament('active', now()->subHours(rand(1, 5)), $players);
-            });
-        }
+        $this->command->info("--- Generating 1 Active (Live) Tournament ---");
+        DB::transaction(function () use ($players) {
+            // A live tournament happening today
+            $this->generateTournament('active', now(), $players);
+        });
 
-        $this->command->info("--- Generating 2 Registration Tournaments ---");
-        for ($i = 1; $i <= 2; $i++) {
-            $this->generateTournament('registration', now()->addDays(rand(1, 5)), $players);
+        $this->command->info("--- Generating 5 Upcoming (Registration) Tournaments ---");
+        // Start scheduling for the next upcoming Friday
+        $upcomingTracker = now()->next(Carbon::FRIDAY);
+        
+        for ($i = 1; $i <= 5; $i++) {
+            $this->generateTournament('registration', clone $upcomingTracker, $players);
+            $upcomingTracker->addWeek(); // Schedule one for each future Friday
         }
 
         $this->command->info("Tournament Seeder finished successfully!");
@@ -64,17 +74,31 @@ class TournamentSeeder extends Seeder
 
     private function generateTournament(string $status, Carbon $date, $allPlayers)
     {
-        $playerCount = rand(4, 16);
+        // Hardcode the start time to exactly 19:00:00
+        $date->setTime(19, 0, 0);
+
+        // 1. Capacity Rules: 10 to 16 people
+        $capacity = rand(10, 16);
+        $playerCount = rand(10, $capacity);
+        
+        // Swiss rules: Usually 3 rounds for 8+, 4 rounds for 16+
         $totalRounds = max(3, ceil(log($playerCount, 2))); 
 
-        $tournament = Tournament::create([
+        // 2. Safely create the tournament bypassing default Laravel timestamps
+        $tournament = new Tournament([
             'name'              => 'Gym Battle - ' . $date->format('Y-m-d'),
             'start_date'        => $date,
             'total_rounds'      => $totalRounds,
-            'capacity'          => 16,
+            'capacity'          => $capacity,
             'registered_player' => $playerCount,
             'status'            => $status === 'registration' ? 'registration' : 'active' 
         ]);
+        
+        // Explicitly set timestamps (Created 1 week before, Updated on the day of)
+        $tournament->timestamps = false; 
+        $tournament->created_at = $date->copy()->subWeek();
+        $tournament->updated_at = $date->copy();
+        $tournament->save();
 
         $selectedPlayers = $allPlayers->random($playerCount);
         
@@ -108,7 +132,11 @@ class TournamentSeeder extends Seeder
 
         if ($status === 'completed') {
             $tournament->status = 'completed';
+            
+            // Disable timestamps again so the save() doesn't overwrite our historical updated_at
+            $tournament->timestamps = false;
             $tournament->save();
+            
             $this->tournamentServices->processArchetypeStats($tournament->id);
         }
     }
@@ -132,10 +160,15 @@ class TournamentSeeder extends Seeder
                 continue;
             }
 
+            // 3. New Win/Loss/Tie Logic (10% Tie Chance)
             $rand = rand(1, 100);
-            if ($rand <= 35) $resultCode = 1;
-            elseif ($rand <= 70) $resultCode = 2;
-            else $resultCode = 3;
+            if ($rand <= 45) {
+                $resultCode = 1; // 45% chance Player 1 wins
+            } elseif ($rand <= 90) {
+                $resultCode = 2; // 45% chance Player 2 wins
+            } else {
+                $resultCode = 3; // 10% chance Tie
+            }
 
             $startingPlayerId = rand(0, 1) ? $match->player1->user_id : $match->player2->user_id;
 

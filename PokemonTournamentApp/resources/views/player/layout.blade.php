@@ -77,6 +77,8 @@
     {{-- 5. AdminLTE --}}
     <script src="{{ asset('adminlte/dist/js/adminlte.min.js') }}"></script>
 
+    @include('partials.toasts')
+
     {{-- ADD THIS LINE HERE: --}}
     @stack('scripts')
 

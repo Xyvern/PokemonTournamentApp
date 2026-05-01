@@ -76,16 +76,31 @@ class SiteController extends Controller
     public function tournamentDetail($id)
     {
         $tournament = Tournament::findOrFail($id);
-        $myEntry = TournamentEntry::where('tournament_id', $tournament->id)
-        ->where('user_id', Auth::id())
-        ->first();
+
+        // 1. Initialize variables safely for guests
+        $myEntry = null;
+        $myDeck = collect(); 
+
+        // 2. Only query personal data if a user is logged in
+        if (Auth::check()) {
+            $myEntry = TournamentEntry::where('tournament_id', $tournament->id)
+                ->where('user_id', Auth::id())
+                ->first();
+                
+            $myDeck = Deck::where('user_id', Auth::id())->get();
+        }
+
+        // 3. Tournament match logic (Viewable by everyone)
         if ($tournament->status == "active") {
-            $currentRound = $tournament->matches->max('round_number');
-        }else{
+            // Added ?? 1 just in case max() returns null when no matches exist yet
+            $currentRound = $tournament->matches->max('round_number') ?? 1; 
+        } else {
             $currentRound = 1;
         }
+        
         $matches = $tournament->getMatchesForRound($currentRound);
-        $myDeck = Deck::where('user_id', Auth::id())->get();
+
+        // 4. Metagame chart logic (Viewable by everyone)
         $metaStats = $tournament->entries->map(function ($entry) {
             // Traverse relationships safely. If any part is null, default to 'Other / Rogue'
             return $entry->deck?->globalDeck?->archetype?->name ?? 'Other / Rogue';
@@ -94,6 +109,7 @@ class SiteController extends Controller
         // Prepare arrays for Chart.js
         $metaLabels = $metaStats->keys()->toArray();
         $metaData = $metaStats->values()->toArray();
+
         return view('tournaments.detail', compact(
             'tournament', 'currentRound', 'myEntry', 'matches', 
             'metaLabels', 'metaData', 'myDeck'

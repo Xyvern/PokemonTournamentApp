@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
             SetSeeder::class,
             CardSeeder::class,
             UserSeeder::class,
-            // MetaSeeder::class,
             ArchetypeSeeder::class,
             TournamentSeeder::class
         ]);

@@ -124,13 +124,13 @@
     import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyDcbsQPL2I6s8v8UgFZUUWmjVV46PQg4j0",
-        authDomain: "pokemontournamentlivechat.firebaseapp.com",
-        projectId: "pokemontournamentlivechat",
-        storageBucket: "pokemontournamentlivechat.firebasestorage.app",
-        messagingSenderId: "368650090371",
-        appId: "1:368650090371:web:f49c22aaa8af675022e8b6",
-        measurementId: "G-506HRXD5SN"
+        apiKey: "{{ config('services.firebase.api_key') }}",
+        authDomain: "{{ config('services.firebase.auth_domain') }}",
+        projectId: "{{ config('services.firebase.project_id') }}",
+        storageBucket: "{{ config('services.firebase.storage_bucket') }}",
+        messagingSenderId: "{{ config('services.firebase.messaging_sender_id') }}",
+        appId: "{{ config('services.firebase.app_id') }}",
+        measurementId: "{{ config('services.firebase.measurement_id') }}"
     };
 
     const app = initializeApp(firebaseConfig);

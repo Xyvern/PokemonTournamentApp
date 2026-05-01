@@ -256,4 +256,11 @@ class PlayerSiteController extends Controller
         // Pass the token to the view
         return view('player.upgrade', compact('snapToken'));
     }
+
+    public function editProfile()
+    {
+        // Get the currently logged-in user
+        $user = Auth::user();
+        return view('player.edit_profile', compact('user'));
+    }
 }

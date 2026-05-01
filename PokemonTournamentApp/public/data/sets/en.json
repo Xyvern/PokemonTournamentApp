@@ -2613,6 +2613,7 @@
     "printedTotal": 102,
     "total": 75,
     "legalities": {
+      "standard": "Legal",
       "unlimited": "Legal",
       "expanded": "Legal"
     },

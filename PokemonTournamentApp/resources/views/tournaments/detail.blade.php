@@ -368,7 +368,7 @@
                                                     <div>
                                                         <span class="font-weight-bold text-dark">Round {{ $match->round_number }}</span>
                                                         <div class="small text-muted">
-                                                            vs {{ $opponent ? $opponent->user->nickname : 'Bye' }} ({{ $match->elo_gain }})
+                                                            vs {{ $opponent ? $opponent->user->nickname : 'Bye' }} ({{ $resultText === 'Win' ? '+' : ($resultText === 'Loss' ? '-' : '') }}{{ $match->elo_gain }})
                                                         </div>
                                                     </div>
                                                     <div class="text-right">

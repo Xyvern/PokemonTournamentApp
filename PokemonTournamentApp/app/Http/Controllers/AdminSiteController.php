@@ -128,19 +128,42 @@ class AdminSiteController extends Controller
         ));
     }
 
-    public function cardDatabase()
+    public function cardDatabase(Request $request)
     {
         // 1. Get the latest set for the header panel
-        $latestSet = Set::orderBy('release_date', 'desc')->first();
+        $latestSet = \App\Models\Set::orderBy('release_date', 'desc')->first();
 
-        // 2. Paginate by SET (3 at a time), and eager load their cards
-        // We order the sets from newest to oldest, and the cards inside them by their set number
-        $sets = Set::with(['cards' => function ($query) {
-                // Ordering by the integer value of the number ensures card "2" comes before "10"
+        // 2. Start the query for Sets
+        $setsQuery = \App\Models\Set::query();
+
+        // 3. Handle the Search Logic
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            
+            // Only find sets that contain cards matching the search name
+            $setsQuery->whereHas('cards', function($q) use ($searchTerm) {
+                $q->where('name', 'LIKE', '%' . $searchTerm . '%');
+            });
+
+            // Eager load ONLY the cards that match the search (so you don't load the whole set!)
+            $setsQuery->with(['cards' => function($q) use ($searchTerm) {
+                $q->where('name', 'LIKE', '%' . $searchTerm . '%')
+                  ->orderByRaw('CAST(number AS UNSIGNED) ASC');
+            }]);
+        } else {
+            // Normal behavior: Load all cards in the sets
+            $setsQuery->with(['cards' => function ($query) {
                 $query->orderByRaw('CAST(number AS UNSIGNED) ASC'); 
-            }])
-            ->orderBy('release_date', 'desc')
-            ->paginate(2);
+            }]);
+        }
+
+        // 4. Paginate the sets
+        $sets = $setsQuery->orderBy('release_date', 'desc')->paginate(2);
+
+        // Keep the search term in the pagination links!
+        if ($request->filled('search')) {
+            $sets->appends(['search' => $request->search]);
+        }
 
         return view('admin.cards.index', compact('latestSet', 'sets'));
     }
@@ -325,5 +348,11 @@ class AdminSiteController extends Controller
         })->sortByDesc('win_rate')->values(); // Sort so the best players are at the top
 
         return view('admin.archetypes.detail', compact('archetype', 'latestResults', 'playerStats'));
+    }
+
+    public function cardDetail($id)
+    {
+        $card = Card::where('api_id', $id)->firstOrFail();
+        return view('admin.cards.detail', ['card' => $card]);
     }
 }

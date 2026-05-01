@@ -103,12 +103,10 @@ class AdminController extends Controller
 
         $tournament = Tournament::findOrFail($id);
 
-        // Rule 1: Drops can only happen when the tournament is active
-        if ($tournament->status !== 'active') {
-            return back()->with('error', 'Players can only be dropped while the tournament is active.');
+        if ($tournament->status === 'completed') {
+            return back()->with('error', 'Cannot drop players from a completed tournament.');
         }
 
-        // Fetch the specific entry, ensuring it belongs to this tournament
         $entry = TournamentEntry::where('id', $request->entry_id)
             ->where('tournament_id', $tournament->id)
             ->firstOrFail();
@@ -117,37 +115,35 @@ class AdminController extends Controller
             return back()->with('error', 'This player has already dropped from the tournament.');
         }
 
-        // Rule 2: Flag the player as dropped
+        // NEW LOGIC: If the tournament hasn't started yet, physically remove them to free up capacity
+        if ($tournament->status === 'registration') {
+            $nickname = $entry->user->nickname;
+            $entry->delete();
+            $tournament->decrement('registered_player');
+            
+            return back()->with('success', "{$nickname} has been removed from the registration list.");
+        }
+
+        // ORIGINAL LOGIC: If the tournament is active, flag them as dropped and concede matches
         $entry->is_dropped = true;
         $entry->save();
 
-        // Rule 3: Concede current match if it is in progress
         $currentRound = $tournament->matches()->max('round_number');
-        
         if ($currentRound) {
-            // Find any unresolved match for this player in the current round
             $activeMatch = TournamentMatch::where('round_number', $currentRound)
-                ->whereNull('result_code') // Match is still in progress
+                ->whereNull('result_code')
                 ->where(function ($query) use ($entry) {
                     $query->where('player1_entry_id', $entry->id)
                           ->orWhere('player2_entry_id', $entry->id);
-                })
-                ->first();
+                })->first();
 
-            // If an active match exists, the opponent gets the automatic win
             if ($activeMatch) {
-                if ($activeMatch->player1_entry_id === $entry->id) {
-                    // Player 1 dropped -> Player 2 wins
-                    $activeMatch->result_code = 2;
-                } else {
-                    // Player 2 dropped -> Player 1 wins
-                    $activeMatch->result_code = 1;
-                }
+                $activeMatch->result_code = ($activeMatch->player1_entry_id === $entry->id) ? 2 : 1;
                 $activeMatch->save();
             }
         }
 
-        return back()->with('success', $entry->user->nickname . ' has been dropped from the tournament and their active match has been conceded.');
+        return back()->with('success', "{$entry->user->nickname} has been dropped and their active match conceded.");
     }
 
     public function generateNextRound(
@@ -277,82 +273,209 @@ class AdminController extends Controller
     {
         set_time_limit(0); // Prevent timeout during large API pulls
 
-        // 1. Find the latest release date in your DB
-        $latestSet = Set::orderBy('release_date', 'desc')->first();
-        
-        // Format the API query. If DB is empty, pull everything. Otherwise, pull newer.
-        // The API expects format YYYY/MM/DD
-        $apiQuery = '';
-        if ($latestSet && $latestSet->release_date) {
-            $formattedDate = Carbon::parse($latestSet->release_date)->format('Y/m/d');
-            $apiQuery = "?q=releaseDate:>{$formattedDate}&orderBy=releaseDate";
-        }
+        $apiKey = env('POKEMON_TCG_API_KEY');
 
-        // 2. Fetch New Sets
-        $setsResponse = Http::get("https://api.pokemontcg.io/v2/sets{$apiQuery}");
+        // 1. Find the latest release date in your DB
+        $latestSet = \App\Models\Set::orderBy('release_date', 'desc')->first();
+        $latestDate = $latestSet ? \Carbon\Carbon::parse($latestSet->release_date) : null;
+
+        // 2. Fetch ALL Sets, ordered Newest to Oldest
+        $setsResponse = \Illuminate\Support\Facades\Http::withHeaders([
+            'X-Api-Key' => $apiKey
+        ])->get("https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate");
         
         if (!$setsResponse->successful()) {
-            return back()->with('error', 'Failed to connect to Pokemon TCG API for Sets.');
+            return back()->with('error', 'Sets API Error ' . $setsResponse->status() . ': ' . $setsResponse->body());
         }
 
-        $newSets = $setsResponse->json()['data'];
+        $allSets = $setsResponse->json()['data'];
 
-        if (empty($newSets)) {
-            return back()->with('success', 'Your database is already up to date!');
+        if (empty($allSets)) {
+            return back()->with('error', 'API returned an empty list of sets.');
         }
-
-        
 
         $cardsAdded = 0;
+        $setsAdded = 0;
 
-        DB::transaction(function () use ($newSets, &$cardsAdded) {
-            foreach ($newSets as $setData) {
-                // A. Insert the Set
-                $set = Set::updateOrCreate(
-                    ['api_id' => $setData['id']], // Assuming your sets table uses api_id
-                    [
-                        'name' => $setData['name'],
-                        'ptcgo_code' => $setData['ptcgoCode'] ?? null,
-                        'release_date' => $setData['releaseDate'],
-                        // Add other set columns you track here
-                    ]
-                );
+        \Illuminate\Support\Facades\DB::transaction(function () use ($allSets, $latestDate, &$cardsAdded, &$setsAdded, $apiKey) {
+            foreach ($allSets as $setData) {
+                
+                $apiSetDate = \Carbon\Carbon::parse($setData['releaseDate']);
 
-                // B. Fetch Cards for this specific Set
-                $cardsResponse = Http::get("https://api.pokemontcg.io/v2/cards?q=set.id:{$setData['id']}");
+                // Rule 1: Break if the set is older than our database
+                if ($latestDate && $apiSetDate->lt($latestDate)) {
+                    break;
+                }
+
+                // Rule 2: Skip non-Standard sets
+                if (!isset($setData['legalities']['standard']) || strtolower($setData['legalities']['standard']) !== 'legal') {
+                    continue;
+                }
+
+                // Rule 3: Skip if it already exists
+                if (\App\Models\Set::where('api_id', $setData['id'])->exists()) {
+                    continue; 
+                }
+
+                // --- 3. Create the Set ---
+                $set = \App\Models\Set::create([
+                    'api_id'         => $setData['id'],
+                    'name'           => $setData['name'],
+                    'series'         => $setData['series'] ?? 'Unknown',
+                    'printed_total'  => $setData['printedTotal'] ?? null,
+                    'total'          => $setData['total'] ?? null,
+                    'ptcgo_code'     => $setData['ptcgoCode'] ?? null,
+                    'release_date'   => $setData['releaseDate'] ?? null,
+                    'updated_at_api' => $setData['updatedAt'] ?? null,
+                ]);
+
+                // Set Relations
+                if (isset($setData['legalities'])) {
+                    $set->legalities()->create($setData['legalities']);
+                }
+
+                if (isset($setData['images'])) {
+                    $set->images()->create($setData['images']);
+                }
+                
+                $setsAdded++;
+
+                // --- 4. Fetch Cards for this specific NEW Set ---
+                $cardsResponse = \Illuminate\Support\Facades\Http::withHeaders([
+                    'X-Api-Key' => $apiKey
+                ])->get("https://api.pokemontcg.io/v2/cards", [
+                    'q' => "set.id:{$setData['id']}"
+                ]);
                 
                 if ($cardsResponse->successful()) {
                     $cardsData = $cardsResponse->json()['data'];
                     
-                    $cardsToInsert = [];
                     foreach ($cardsData as $cardData) {
-                        $cardsToInsert[] = [
-                            'api_id'      => $cardData['id'],
-                            'set_id'      => $set->id,
-                            'name'        => $cardData['name'],
-                            'supertype'   => $cardData['supertype'],
-                            'number'      => $cardData['number'],
-                            'artist'      => $cardData['artist'] ?? 'Unknown',
-                            'hp'          => $cardData['hp'] ?? null,
-                            'is_playable' => true, // Apply your custom logic here if needed
-                            'created_at'  => now(),
-                            'updated_at'  => now(),
-                        ];
-                    }
+                        
+                        // Create main card
+                        $card = \App\Models\Card::create([
+                            'api_id'                 => $cardData['id'] ?? null,
+                            'set_id'                 => $set->id,
+                            'name'                   => $cardData['name'] ?? null,
+                            'supertype'              => $cardData['supertype'] ?? null,
+                            'hp'                     => $cardData['hp'] ?? null,
+                            'evolves_from'           => $cardData['evolvesFrom'] ?? null,
+                            'rarity'                 => $cardData['rarity'] ?? null,
+                            'flavor_text'            => $cardData['flavorText'] ?? null,
+                            'number'                 => $cardData['number'] ?? null,
+                            'artist'                 => $cardData['artist'] ?? null,
+                            'converted_retreat_cost' => $cardData['convertedRetreatCost'] ?? null,
+                            'is_playable'            => true, // Assumed true as we are filtering strictly by standard sets
+                        ]);
 
-                    // Bulk insert the cards for speed
-                    if (!empty($cardsToInsert)) {
-                        // Chunking to avoid massive SQL query limits
-                        foreach (array_chunk($cardsToInsert, 500) as $chunk) {
-                            Card::insert($chunk);
+                        // Subtypes
+                        foreach ($cardData['subtypes'] ?? [] as $subtype) {
+                            \App\Models\CardSubtype::create([
+                                'card_id' => $card->id,
+                                'subtype' => $subtype,
+                            ]);
                         }
-                        $cardsAdded += count($cardsToInsert);
+
+                        // Types
+                        foreach ($cardData['types'] ?? [] as $type) {
+                            \App\Models\CardType::create([
+                                'card_id' => $card->id,
+                                'type' => $type,
+                            ]);
+                        }
+
+                        // Rules
+                        foreach ($cardData['rules'] ?? [] as $ruleText) {
+                            \App\Models\CardRule::create([
+                                'card_id' => $card->id,
+                                'text' => $ruleText,
+                            ]);
+                        }
+
+                        // Abilities
+                        foreach ($cardData['abilities'] ?? [] as $ability) {
+                            \App\Models\CardAbility::create([
+                                'card_id' => $card->id,
+                                'name' => $ability['name'] ?? null,
+                                'text' => $ability['text'] ?? null,
+                                'type' => $ability['type'] ?? null,
+                            ]);
+                        }
+
+                        // Attacks & Attack Costs
+                        foreach ($cardData['attacks'] ?? [] as $attackData) {
+                            $attack = \App\Models\CardAttack::create([
+                                'card_id' => $card->id,
+                                'name' => $attackData['name'] ?? null,
+                                'converted_energy_cost' => $attackData['convertedEnergyCost'] ?? null,
+                                'damage' => $attackData['damage'] ?? null,
+                                'text' => $attackData['text'] ?? null,
+                            ]);
+
+                            foreach ($attackData['cost'] ?? [] as $cost) {
+                                \App\Models\CardAttackCost::create([
+                                    'card_attack_id' => $attack->id,
+                                    'cost' => $cost,
+                                ]);
+                            }
+                        }
+
+                        // Weaknesses
+                        foreach ($cardData['weaknesses'] ?? [] as $weakness) {
+                            \App\Models\CardWeakness::create([
+                                'card_id' => $card->id,
+                                'type' => $weakness['type'] ?? null,
+                                'value' => $weakness['value'] ?? null,
+                            ]);
+                        }
+
+                        // Retreat Cost
+                        foreach ($cardData['retreatCost'] ?? [] as $cost) {
+                            \App\Models\CardRetreatCost::create([
+                                'card_id' => $card->id,
+                                'cost' => $cost,
+                            ]);
+                        }
+
+                        // National Pokedex Numbers
+                        foreach ($cardData['nationalPokedexNumbers'] ?? [] as $num) {
+                            \App\Models\CardPokedexNumber::create([
+                                'card_id' => $card->id,
+                                'number' => $num,
+                            ]);
+                        }
+
+                        // Legalities
+                        foreach ($cardData['legalities'] ?? [] as $format => $status) {
+                            \App\Models\CardLegality::create([
+                                'card_id' => $card->id,
+                                'format' => $format,
+                                'status' => $status,
+                            ]);
+                        }
+
+                        // Images
+                        if (isset($cardData['images'])) {
+                            \App\Models\CardImage::create([
+                                'card_id' => $card->id,
+                                'small' => $cardData['images']['small'] ?? null,
+                                'large' => $cardData['images']['large'] ?? null,
+                            ]);
+                        }
+
+                        $cardsAdded++;
                     }
+                } else {
+                    \Illuminate\Support\Facades\Log::warning("Failed to fetch cards for set: {$setData['id']}");
                 }
             }
         });
 
-        return back()->with('success', "Successfully synced " . count($newSets) . " new sets and {$cardsAdded} new cards!");
+        if ($setsAdded === 0) {
+            return back()->with('success', 'Your database is already up to date! No new standard sets found.');
+        }
+
+        return back()->with('success', "Successfully synced {$setsAdded} new sets and {$cardsAdded} new cards!");
     }
 
     public function storeTournament(Request $request)
@@ -439,5 +562,36 @@ class AdminController extends Controller
         ]);
 
         return back()->with('success', 'Archetype updated successfully!');
+    }
+
+    public function togglePlayable($id)
+    {
+        $card = \App\Models\Card::findOrFail($id);
+        
+        // Flip the boolean (true becomes false, false becomes true)
+        $card->is_playable = !$card->is_playable;
+        $card->save();
+
+        $statusText = $card->is_playable ? 'Playable' : 'Not Playable';
+
+        return back()->with('success', "Card '{$card->name}' has been marked as {$statusText}.");
+    }
+
+    public function cancelTournament($id)
+    {
+        $tournament = Tournament::findOrFail($id);
+
+        if ($tournament->status !== 'registration') {
+            return back()->with('error', 'You can only cancel tournaments that are in the registration phase.');
+        }
+
+        // 1. Mark all current entries as dropped
+        $tournament->entries()->update(['is_dropped' => true]);
+
+        // 2. Change status to completed so it locks
+        $tournament->status = 'completed';
+        $tournament->save();
+
+        return back()->with('success', 'Tournament has been cancelled. All registered players have been dropped.');
     }
 }
