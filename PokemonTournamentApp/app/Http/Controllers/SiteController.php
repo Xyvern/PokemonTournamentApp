@@ -16,16 +16,41 @@ use Illuminate\Support\Facades\DB;
 
 class SiteController extends Controller
 {
-    public function cards()
+    public function cards(Request $request)
     {
-        // Fetch Sets, eager-load their cards (ordered by number), and paginate 2 Sets per page
-        $sets = Set::with(['cards' => function ($query) {
-                $query->orderByRaw('CAST(number AS UNSIGNED) ASC'); 
-            }])
-            ->orderBy('release_date', 'desc')
-            ->paginate(2); // <-- 2 sets per page as requested
+        $search = $request->input('search');
 
-        return view('cards.index', compact('sets')); // Adjust the view path if yours is different
+        // 1. Start the query for Sets
+        $query = Set::query();
+
+        // 2. If the user searched for something, apply the filters
+        if ($search) {
+            // Only fetch Sets that ACTUALLY CONTAIN a card matching the search
+            $query->whereHas('cards', function ($q) use ($search) {
+                $q->where('name', 'LIKE', '%' . $search . '%');
+            });
+
+            // Eager-load ONLY the matching cards within those Sets
+            $query->with(['cards' => function ($q) use ($search) {
+                $q->where('name', 'LIKE', '%' . $search . '%')
+                ->orderByRaw('CAST(number AS UNSIGNED) ASC');
+            }]);
+        } else {
+            // No search? Just load all cards normally
+            $query->with(['cards' => function ($q) {
+                $q->orderByRaw('CAST(number AS UNSIGNED) ASC');
+            }]);
+        }
+
+        // 3. Paginate the Sets (2 per page)
+        $sets = $query->orderBy('release_date', 'desc')->paginate(2);
+
+        // 4. CRITICAL: Tell Laravel's paginator to remember the search term on Page 2, Page 3, etc.
+        if ($search) {
+            $sets->appends(['search' => $search]);
+        }
+
+        return view('cards.index', compact('sets')); // Adjust view path if needed
     }
 
     public function cardDetail($id)
@@ -174,23 +199,51 @@ class SiteController extends Controller
             ->get()
             ->groupBy('user_id')
             ->map(function ($entries) {
-                $wins = $entries->sum('wins');
-                $losses = $entries->sum('losses');
-                $ties = $entries->sum('ties');
-                $total = $wins + $losses + $ties;
-                
-                return [
-                    'user' => $entries->first()->user,
-                    'total_matches' => $total,
-                    'wins' => $wins,
-                    'win_rate' => $total > 0 ? round(($wins / $total) * 100, 1) : 0,
-                    'best_rank' => $entries->min('rank') ?? '-',
-                    'entries_count' => $entries->count()
-                ];
-            })
-            ->sortByDesc('win_rate');
-
+                    $wins = $entries->sum('wins');
+                    $losses = $entries->sum('losses');
+                    $ties = $entries->sum('ties');
+                    $total = $wins + $losses + $ties;
+                    
+                    return [
+                        'user' => $entries->first()->user,
+                        'total_matches' => $total,
+                        'wins' => $wins,
+                        'win_rate' => $total > 0 ? round(($wins / $total) * 100, 1) : 0,
+                        // Calculate the Wilson Score here:
+                        'wilson_score' => $this->calculateWilsonScore($wins, $total),
+                        'best_rank' => $entries->min('rank') ?? '-',
+                        'entries_count' => $entries->count()
+                    ];
+                })
+                ->sortByDesc('wilson_score')
+                ->take(10);
         return view('archetypes.detail', compact('archetype', 'latestResults', 'playerStats'));
     }
+
+    // Helper function
+    /**
+     * Calculates the Wilson Score Interval Lower Bound
+     * @param int $wins The number of successful outcomes
+     * @param int $total The total number of attempts/matches
+     * @return float The lower bound score (0.0 to 1.0)
+     */
+    public function calculateWilsonScore($wins, $total)
+    {
+        if ($total == 0) {
+            return 0.0;
+        }
+
+        $z = 1.96; // 95% confidence level
+        $phat = $wins / $total;
+
+        // Numerator calculations
+        $term1 = $phat + ($z * $z) / (2 * $total);
+        $term2 = $z * sqrt(($phat * (1 - $phat) + ($z * $z) / (4 * $total)) / $total);
+        $numerator = $term1 - $term2;
+
+        // Denominator calculation
+        $denominator = 1 + ($z * $z) / $total;
+
+        return $numerator / $denominator;
+    }
 }
-            

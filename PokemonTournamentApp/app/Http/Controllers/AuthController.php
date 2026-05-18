@@ -85,6 +85,6 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         
         // ADDED SUCCESS TOAST
-        return redirect('/login')->with('success', 'You have been successfully logged out.');
+        return redirect('/')->with('success', 'You have been successfully logged out.');
     }
 }

@@ -313,8 +313,12 @@
                     @if(isset($myEntry))
                         <div class="card mb-4 bg-light border-info">
                             <div class="card-body">
-                                <h5 class="card-title text-info">My Performance</h5>
-                                <hr>
+                                {{-- Removed 'card-title' so it stops floating, added mb-0 to control spacing --}}
+                                <h5 class="text-info mb-0">My Performance</h5>
+                                
+                                {{-- Added mt-2 (margin-top) to give the line a little breathing room --}}
+                                <hr class="mt-2 mb-3">
+                                
                                 <div class="d-flex justify-content-between mb-3">
                                     <span>Rank:</span>
                                     <span class="font-weight-bold">{{ $myEntry->rank ?? '-' }} / {{ $tournament->registered_player }}</span>

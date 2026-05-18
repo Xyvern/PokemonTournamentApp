@@ -25,11 +25,31 @@
 
 <div style="margin-left: 10vw; margin-top: 2vh; margin-right: 10vw;">
 
-    {{-- 1. Page Header --}}
+    {{-- 1. Page Header & Search Bar --}}
     <div class="row mb-4 align-items-center">
-        <div class="col-12">
+        {{-- Left: Titles --}}
+        <div class="col-md-6 mb-3 mb-md-0">
             <h2 class="mb-1 font-weight-bold">Cards Collection</h2>
             <p class="text-muted mb-0">Browse through the latest Pokémon TCG expansions.</p>
+        </div>
+
+        {{-- Right: Search Bar --}}
+        <div class="col-md-6">
+            <form action="{{ url()->current() }}" method="GET" class="m-0">
+                <div class="input-group shadow-sm">
+                    <input type="text" name="search" class="form-control border-light" placeholder="Search for a Pokémon..." value="{{ request('search') }}">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        @if(request('search'))
+                            <a href="{{ url()->current() }}" class="btn btn-outline-secondary" title="Clear Search">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 

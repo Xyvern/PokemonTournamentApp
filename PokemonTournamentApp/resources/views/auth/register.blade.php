@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register | AdminLTE</title>
+    <title>Register</title>
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
 </head>
 <body class="hold-transition register-page">
 <div class="register-box">
     <div class="register-logo">
-        <b>My</b>App
+        <a href="{{ url('/') }}">
+            <img src="{{ asset('assets/pcg_logo.png') }}" alt="Logo" style="height: 70px; object-fit: contain;">
+        </a>
     </div>
 
     <div class="card">

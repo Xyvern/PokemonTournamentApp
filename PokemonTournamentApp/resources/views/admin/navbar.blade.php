@@ -104,9 +104,6 @@
                     </a>
 
                     <div class="dropdown-menu dropdown-menu-right border-0 shadow" aria-labelledby="userDropdown">
-                        <a class="dropdown-item" href="{{ route('player.profile', Auth::user()->id) }}">
-                            <i class="fas fa-id-card mr-2 text-muted"></i> Profile
-                        </a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item text-danger" href="{{ route('logout') }}"
                             onclick="event.preventDefault(); document.getElementById('logout-form').submit();">

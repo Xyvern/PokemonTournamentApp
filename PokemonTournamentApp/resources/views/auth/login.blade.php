@@ -10,7 +10,9 @@
 <body class="hold-transition login-page">
 <div class="login-box">
     <div class="login-logo">
-        <b>My</b>App
+        <a href="{{ url('/') }}">
+            <img src="{{ asset('assets/pcg_logo.png') }}" alt="Logo" style="height: 70px; object-fit: contain;">
+        </a>
     </div>
     <div class="card">
         <div class="card-body login-card-body">

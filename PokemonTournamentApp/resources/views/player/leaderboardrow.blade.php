@@ -7,7 +7,7 @@
             @else {{ $index + 1 }}
             @endif
         </td>
-        <td>
+        <td class="text-left pl-5">
             {{-- Make name clickable to go to profile --}}
             <a href="{{ route('player.profile', $player->id) }}" class="text-dark text-decoration-none">
                 {{ $player->nickname }}

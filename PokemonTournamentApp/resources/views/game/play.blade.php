@@ -5,12 +5,14 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('unity-game/TemplateData/style.css') }}">
 
-<div class="container-fluid mt-4">
-    <div class="row">
+{{-- Added the requested margin wrapper --}}
+<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+    <div class="row mb-4">
         {{-- Left Column: Unity WebGL Game --}}
         <div class="col-md-9">
-            <div id="unity-container" class="bg-dark rounded shadow" style="width: 100%; height: 700px; position: relative; overflow: hidden;">
-                <canvas id="unity-canvas" width="100%" height="100%" tabindex="-1" style="background: #231F20; width: 100%; height: 100%;"></canvas>
+            {{-- Replaced height: 700px with aspect-ratio: 16/9 --}}
+            <div id="unity-container" class="bg-dark rounded shadow" style="width: 100%; aspect-ratio: 16/9; position: relative; overflow: hidden;">
+                <canvas id="unity-canvas" tabindex="-1" style="background: #231F20; width: 100%; height: 100%;"></canvas>
                 
                 <div id="unity-loading-bar">
                     <div id="unity-logo"></div>
@@ -21,14 +23,12 @@
                 <div id="unity-warning"></div>
             </div>
             
-            <div class="mt-2">
-                <p class="text-muted small">For Unity Editor Testing: Copy the URL above and paste it into your Dev Login Panel.</p>
-            </div>
         </div>
 
         {{-- Right Column: Live Chat --}}
         <div class="col-md-3">
-            <div class="card shadow-sm border-0 d-flex flex-column" style="height: 700px;">
+            {{-- Replaced fixed height with height: 100% to match the Unity container --}}
+            <div class="card shadow-sm border-0 d-flex flex-column" style="height: 100%;">
                 <div class="card-header bg-dark text-white font-weight-bold border-0">
                     <i class="fas fa-comments mr-2"></i> Live Chat
                 </div>
