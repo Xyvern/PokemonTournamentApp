@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('card_id')->constrained('cards')->onDelete('cascade');
             $table->string('subtype');
-            $table->timestamps();
         });
     }
 

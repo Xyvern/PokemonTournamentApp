@@ -72,6 +72,7 @@
                 <p style="margin: 0px">You are not currently registered for any tournaments.</p>
             </div>
         @endif
+        
         <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Upcoming Registered Tournaments</h2>
         @if (empty($registeredTournaments))
             <p>No upcoming registered tournaments found.</p>
@@ -103,6 +104,7 @@
         <div class="text-right mt-2">
             <a href="{{ route('tournaments.index', ['filter' => 'registered']) }}" class="btn btn-sm btn-outline-info">See more upcoming registered tournaments &rarr;</a>
         </div>
+        
         <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Top Archetypes</h2>
 
         <div class="row" style="margin-top: 2vh;">
@@ -146,8 +148,45 @@
         <div class="text-right mt-2">
             <a href="{{ route('archetypes.index') }}" class="btn btn-sm btn-outline-info">See more archetypes &rarr;</a>
         </div>
+
+
+        {{-- NEW: ACTIVE TOURNAMENTS SECTION --}}
+        <h2 style="margin-top: 4vh; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Active Tournaments</h2>
+        @if ($activeTournaments->isEmpty())
+            <div class="alert alert-light" style="margin-top: 2vh;">No active tournaments found.</div>
+        @else
+            <div class="row" style="margin-top: 2vh;">
+                @foreach ($activeTournaments->take(3) as $item)
+                    {{-- col-md-4 will nicely fit 3 cards horizontally --}}
+                    <div class="col-md-4">
+                        <a href="{{ route('tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
+                            <div class="info-box shadow-sm mb-3 hover-lift">
+                                {{-- Bright blue bg-primary for the icon box --}}
+                                <span class="info-box-icon bg-primary d-flex flex-column justify-content-center align-items-center" style="font-size: 1.5rem; min-width: 80px;">
+                                    <span style="font-size: 1.5rem; font-weight: bold; color: white;">{{ $item->capacity }}</span>
+                                    <span style="font-size: 0.8rem; color: white;">Max</span>
+                                </span>
+
+                                <div class="info-box-content p-2">
+                                    <span class="info-box-text" style="font-weight: bold; font-size: 1.1rem;">{{ $item->name }}</span>
+                                    <div class="info-box-number text-muted" style="font-weight: 500; font-size: 0.9rem;">
+                                        <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ $item->start_date instanceof \DateTime ? $item->start_date->format('d M Y') : $item->start_date }}</p>
+                                        <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+            <div class="text-right mt-2">
+                <a href="{{ route('tournaments.index', ['filter' => 'active']) }}" class="btn btn-sm btn-outline-primary">See all active tournaments &rarr;</a>
+            </div>
+        @endif
+        {{-- END ACTIVE TOURNAMENTS --}}
+
         {{-- ------------------ --}}
-        <div class="row">
+        <div class="row" style="margin-top: 2vh;">
             <div class="col-md-6">
                 <h2 style="margin-top: 2vh; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">Recent Tournaments</h2>
                 
@@ -217,7 +256,7 @@
             </div>
         </div>
         {{-- ---------------------------------- --}}
-        <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Recent sets</h2>
+        <h2 style="margin-top: 4vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Recent sets</h2>
         @if ($sets->isEmpty())
             <p>No recent sets found.</p>
         @else
@@ -240,7 +279,7 @@
             </div>
             @endforeach
         </div>
-        <div class="text-right mt-2">
+        <div class="text-right mt-2 pb-5">
             <a href="{{ route('sets.index') }}" class="btn btn-sm btn-outline-info">See more sets &rarr;</a>
         </div>
         @endif

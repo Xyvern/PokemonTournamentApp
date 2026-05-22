@@ -12,14 +12,18 @@
                 <div class="card shadow-sm border-top-primary">
                     <div class="card-body d-flex align-items-center flex-wrap"> 
                         <div>
-                            <h1 class="mb-1">{{ $tournament->name }}</h1>
+                            <h1 class="mb-1 d-flex align-items-center">
+                                {{ $tournament->name }}
+                                <a href="{{ route('admin.tournaments.edit', $tournament->id) }}" class="btn btn-sm btn-outline-primary ml-3" style="font-size: 0.9rem;">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </h1>
                             <div class="text-muted">
                                 <span class="mr-3"><i class="far fa-calendar-alt mr-1"></i> {{ $tournament->start_date->format('d M Y, H:i') }}</span>
                                 <span class="mr-3"><i class="fas fa-users mr-1"></i> {{ $tournament->registered_player }} / {{ $tournament->capacity }} Players</span>
                                 <span class="mr-3"><i class="fas fa-list-ol mr-1"></i> {{ $tournament->total_rounds }} Rounds</span>
                             </div>
                         </div>
-
                         <div class="mt-2 mt-md-0 ml-auto"> 
                             @if($tournament->status === 'registration')
                                 <span class="badge badge-primary p-2" style="font-size: 1rem;">Registration Open</span>
@@ -61,7 +65,7 @@
                                         <th>Player 2</th>
                                         <th>Result</th>
                                         <th>Admin Action</th>
-                                        <th>Spectate</th> {{-- Added New Column Here --}}
+                                        <th>Spectate</th>
                                     </tr>
                                 </thead>
                                 <tbody id="matches-table-body">
@@ -98,7 +102,7 @@
                                             <td>{{ $entry->user->nickname ?? 'Unknown' }}</td>
                                             <td>
                                                 @if ($entry->deck->globalDeck->archetype?->name)
-                                                    <a href="{{ route('showDeck', ['deck' => $entry->deck->id]) }}" target="_blank">{{ $entry->deck->globalDeck->archetype->name }}</a>
+                                                    {{ $entry->deck->globalDeck->archetype->name }}
                                                 @else
                                                     <span class="text-muted">Unknown</span>
                                                 @endif

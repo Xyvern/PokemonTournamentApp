@@ -18,7 +18,6 @@ return new class extends Migration
             $table->integer('converted_energy_cost')->nullable();
             $table->string('damage')->nullable();
             $table->text('text')->nullable();
-            $table->timestamps();
         });
     }
 

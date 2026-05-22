@@ -77,17 +77,22 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
+            $startTimestamp = strtotime('2025-07-01 00:00:00');
+            $endTimestamp = strtotime('2026-02-28 23:59:59');
+            $randomTimestamp = mt_rand($startTimestamp, $endTimestamp);
+            $randomDate = date('Y-m-d H:i:s', $randomTimestamp);
+
             DB::table('users')->insert([
-                'username' => $user['username'],
-                'password' => Hash::make($user['password']),
-                'nickname' => $user['nickname'],
-                'role' => $user['role'],
-                'elo' => 1000,
+                'username'       => $user['username'],
+                'password'       => Hash::make($user['password']),
+                'nickname'       => $user['nickname'],
+                'role'           => $user['role'],
+                'elo'            => 1000,
                 'matches_played' => 0,
-                'matches_won' => 0,
-                'matches_lost' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'matches_won'    => 0,
+                'matches_lost'   => 0,
+                'created_at'     => $randomDate,
+                'updated_at'     => $randomDate,
             ]);
         }
     }

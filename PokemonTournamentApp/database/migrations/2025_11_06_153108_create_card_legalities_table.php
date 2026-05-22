@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('card_id')->constrained('cards')->onDelete('cascade');
             $table->string('format'); // unlimited, standard, expanded
             $table->string('status'); // Legal, Banned, etc
-            $table->timestamps();
         });
     }
 

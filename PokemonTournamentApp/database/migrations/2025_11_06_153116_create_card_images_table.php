@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('card_id')->constrained('cards')->onDelete('cascade');
             $table->string('small')->nullable();
             $table->string('large')->nullable();
-            $table->timestamps();
         });
     }
 

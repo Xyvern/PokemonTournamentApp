@@ -31,6 +31,10 @@
                                    class="btn {{ request('filter') === 'registered' ? 'btn-dark' : 'btn-outline-secondary' }}">
                                    My Tournaments
                                 </a>
+                                <a href="{{ route('tournaments.index', ['filter' => 'active']) }}" 
+                                   class="btn {{ request('filter') === 'active' ? 'btn-dark' : 'btn-outline-secondary' }}">
+                                   Active
+                                </a>
                                 <a href="{{ route('tournaments.index', ['filter' => 'completed']) }}" 
                                    class="btn {{ request('filter') === 'completed' ? 'btn-dark' : 'btn-outline-secondary' }}">
                                    Completed

@@ -41,7 +41,7 @@
                 @else
                     {{-- Only show Watch button if Player 2 exists (You can't watch a 'Bye') --}}
                     @if($match->player2)
-                        <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
+                        <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary text-nowrap">Watch</a>
                     @endif
                 @endif
             @endif

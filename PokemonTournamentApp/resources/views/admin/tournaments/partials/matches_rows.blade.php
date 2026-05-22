@@ -64,7 +64,7 @@
                 @if($match->result_code !== null)
                     <span class="badge badge-success">Completed</span>
                 @else
-                    <a href="/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary" style="width: 50%">Watch</a>
+                    <a href="/admin/play?match_id={{ $match->id }}&user_id={{ Auth::id() }}" class="btn btn-sm btn-secondary text-nowrap">Watch</a>
                 @endif
             </td>
         @endif

@@ -23,12 +23,16 @@ class ArchetypeSeeder extends Seeder
             'Gholdengo ex'           => ['PAR', '139'],
             "N's Zoroark ex"         => ['JTG', '98'],
             "Marnie's Grimmsnarl ex" => ['DRI', '136'],
-            'Raging Bolt ex'            => ['TEF', '123'],
+            'Raging Bolt ex'         => ['TEF', '123'],
             'Crustle'                => ['DRI', '12'],
             'Mega Absol ex'          => ['MEG', '86'],
             'Charizard ex'           => ['OBF', '125'],
             'Froslass Munkidori'     => ['TWM', '53'],
         ];
+
+        // NEW: Create a ranking weight system (Dragapult = 10, Froslass = 1)
+        $archetypeWeights = [];
+        $currentWeight = count($archetypesData);
 
         $createdArchetypes = [];
         foreach ($archetypesData as $name => $keys) {
@@ -37,24 +41,26 @@ class ArchetypeSeeder extends Seeder
                 ['name' => $name],
                 ['key_card_id' => $keyCard->id]
             );
+            
+            $archetypeWeights[$name] = $currentWeight;
+            $currentWeight--;
         }
 
         $this->command->info("--- Processing 16 Exact Deck Templates ---");
 
         $jsonPath = public_path('data/decklists.json');
         
-        // 2. Read it and decode it back into a PHP array (the 'true' makes it an array instead of an object)
         $decklistsData = json_decode(file_get_contents($jsonPath), true);
 
-        // Optional: Catch JSON formatting errors so you don't pull your hair out debugging!
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->command->error("JSON Error: " . json_last_error_msg());
             return;
         }
 
         $processedGlobalDecks = [];
+        $weightedTemplatePool = []; // NEW: Pool for selecting decks based on popularity
 
-        foreach ($decklistsData as $deckData) {
+        foreach ($decklistsData as $index => $deckData) {
             $cardsMap = []; 
             foreach ($deckData['cards'] as $item) {
                 $card = $this->getPlayableVersion($item[0], $item[1]);
@@ -75,8 +81,11 @@ class ArchetypeSeeder extends Seeder
             $deckHash = hash('sha256', $hashString);
 
             $archetypeId = null;
+            $weight = 1; // Default fallback weight
+            
             if ($deckData['archetype_name'] && isset($createdArchetypes[$deckData['archetype_name']])) {
                 $archetypeId = $createdArchetypes[$deckData['archetype_name']]->id;
+                $weight = $archetypeWeights[$deckData['archetype_name']];
             }
 
             $globalDeck = GlobalDeck::firstOrCreate(
@@ -96,10 +105,15 @@ class ArchetypeSeeder extends Seeder
                 DeckContent::insert($contentToInsert);
             }
 
-            $processedGlobalDecks[] = [
+            $processedGlobalDecks[$index] = [
                 'global_deck_id' => $globalDeck->id,
                 'name_template' => $deckData['name']
             ];
+
+            // NEW: Add this deck index to the pool X times based on its archetype weight
+            for ($w = 0; $w < $weight; $w++) {
+                $weightedTemplatePool[] = $index;
+            }
         }
 
         $this->command->info("--- Fetching / Generating Players ---");
@@ -112,17 +126,40 @@ class ArchetypeSeeder extends Seeder
         }
 
         $playerIds = $players->pluck('id')->toArray();
+        $userCreationDates = $players->pluck('created_at', 'id')->toArray();
+        $nowTimestamp = time();
 
         $this->command->info("--- Generating 1500 Random User Decks ---");
         $decksToInsert = [];
-        for ($i = 0; $i < 1500; $i++) {
-            $randomTemplate = $processedGlobalDecks[array_rand($processedGlobalDecks)];
+        
+        // NEW: Track the absolute earliest timestamp generated for each Global Deck
+        $earliestGlobalDeckDates = [];
+        
+        for ($i = 0; $i < 1612; $i++) {
+            // NEW: Pick a random index from the weighted pool instead of directly from the array
+            $poolIndex = $weightedTemplatePool[array_rand($weightedTemplatePool)];
+            $randomTemplate = $processedGlobalDecks[$poolIndex];
+            
+            $userId = $playerIds[array_rand($playerIds)];
+            
+            $userCreatedAt = strtotime($userCreationDates[$userId]);
+            $upperBound = max($nowTimestamp, $userCreatedAt + 1); 
+            $randomDeckTimestamp = mt_rand($userCreatedAt, $upperBound);
+            $randomDeckDate = date('Y-m-d H:i:s', $randomDeckTimestamp);
+
+            $globalDeckId = $randomTemplate['global_deck_id'];
+            
+            // NEW: Record the earliest date we've ever seen for this specific Global Deck
+            if (!isset($earliestGlobalDeckDates[$globalDeckId]) || $randomDeckTimestamp < $earliestGlobalDeckDates[$globalDeckId]) {
+                $earliestGlobalDeckDates[$globalDeckId] = $randomDeckTimestamp;
+            }
+
             $decksToInsert[] = [
-                'user_id' => $playerIds[array_rand($playerIds)],
-                'global_deck_id' => $randomTemplate['global_deck_id'],
+                'user_id' => $userId,
+                'global_deck_id' => $globalDeckId,
                 'name' => $randomTemplate['name_template'],
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $randomDeckDate,
+                'updated_at' => $randomDeckDate,
             ];
 
             if (count($decksToInsert) === 500) {
@@ -133,6 +170,16 @@ class ArchetypeSeeder extends Seeder
 
         if (!empty($decksToInsert)) {
             Deck::insert($decksToInsert);
+        }
+        
+        // NEW: Retroactively update Global Decks to match their earliest user deck timestamp
+        $this->command->info("--- Updating Global Deck Creation Dates ---");
+        foreach ($earliestGlobalDeckDates as $gId => $earliestTimestamp) {
+            $dateString = date('Y-m-d H:i:s', $earliestTimestamp);
+            GlobalDeck::where('id', $gId)->update([
+                'created_at' => $dateString,
+                'updated_at' => $dateString
+            ]);
         }
 
         foreach ($createdArchetypes as $archetype) {

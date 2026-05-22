@@ -103,6 +103,7 @@ Route::middleware(['auth', 'block.admin'])->group(function () {
         Route::post('/decks/store', [PlayerController::class, 'storeDeck'])->name('storeDeck');
         Route::get('/edit-profile', [PlayerSiteController::class, 'editProfile'])->name('editProfile');
         Route::post('/edit-profile', [PlayerController::class, 'updateProfile'])->name('updateProfile');
+        Route::post('/get-snap-token', [PaymentController::class, 'getSnapToken'])->name('getSnapToken');
     });
 });
 
@@ -117,6 +118,7 @@ Route::middleware(['auth', IsAdmin::class])->prefix('admin')->name('admin.')->gr
     Route::get('/dashboard', [AdminSiteController::class, 'index'])->name('dashboard');
     Route::get('/unassigned-decks', [AdminSiteController::class, 'unassignedDecks'])->name('unassignedDecks');
     Route::post('/assign-archetype', [AdminController::class, 'assignArchetype'])->name('assignArchetype');
+    Route::get('/play', function (Request $request) { return view('admin.play'); })->name('play');
     
     Route::prefix('tournaments')->name('tournaments.')->group(function () {
         Route::get('/', [AdminSiteController::class, 'tournaments'])->name('index');

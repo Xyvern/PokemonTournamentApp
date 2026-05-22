@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('set_id')->constrained()->cascadeOnDelete();
             $table->string('symbol')->nullable();
             $table->string('logo')->nullable();
-            $table->timestamps();
         });
     }
 

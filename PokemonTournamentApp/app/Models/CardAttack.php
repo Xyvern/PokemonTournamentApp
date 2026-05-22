@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CardAttack extends Model
 {
-    public $timestamps = true;
+    public $timestamps = false;
     protected $fillable = [
         'card_id',
         'name',

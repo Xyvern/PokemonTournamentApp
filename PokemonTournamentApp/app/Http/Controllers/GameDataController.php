@@ -60,30 +60,28 @@ class GameDataController extends Controller
 
     public function storeMatchData(Request $request)
     {
-        $resultCode = $request->input('result_code');
+        $request->validate([
+            'match_id' => 'required|exists:tournament_matches,id',
+            'result_code' => 'required|in:1,2,3',
+        ]);
+
         $matchId = $request->input('match_id');
-        if ($resultCode==3) {
-            TournamentMatch::where('id', $matchId)
-                ->update([
-                    'result_code' => $resultCode,
-                ]);
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Match data stored successfully'
-            ]);
-        }else{
-            TournamentMatch::where('id', $matchId)
-                ->update([
-                    'result_code' => $resultCode,
-                ]);
+        $resultCode = $request->input('result_code');
+
+        $updated = TournamentMatch::where('id', $matchId)->update([
+            'result_code' => $resultCode,
+        ]);
+
+        if ($updated) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'Match data stored successfully'
             ]);
         }
+
         return response()->json([
             'status' => 'error',
             'message' => 'Match data storage failed'
-        ]);
+        ], 400);
     }
 }

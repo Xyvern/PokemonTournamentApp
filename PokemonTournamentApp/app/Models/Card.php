@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Card extends Model
 {
+    public $timestamps = false;
     protected $fillable = [
         'api_id',
         'set_id',
@@ -19,6 +20,7 @@ class Card extends Model
         'number',
         'artist',
         'converted_retreat_cost',
+        'is_playable',
     ];
 
     public function set()

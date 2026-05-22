@@ -11,7 +11,6 @@ class IsAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // 2. Swap auth()-> for Auth::
         if (Auth::check() && Auth::user()->role == 2) {
             return $next($request);
         }

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TournamentMatch extends Model
 {
-    // Explicitly define the table name
     protected $table = 'tournament_matches';
 
     protected $fillable = [

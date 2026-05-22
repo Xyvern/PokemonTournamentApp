@@ -59,7 +59,12 @@ class PlayerSiteController extends Controller
                 $registeredTournaments[] = $tournament;
             }
         }
-        return view('player.home', compact('sets', 'archetypes', 'recentTournaments', 'upcomingTournaments', 'currentTournaments', 'registeredTournaments'));
+        $activeTournaments = Tournament::where('status', 'active')
+            ->orderBy('start_date', 'asc')
+            ->take(3)
+            ->get();
+
+        return view('player.home', compact('sets', 'archetypes', 'recentTournaments', 'upcomingTournaments', 'currentTournaments', 'registeredTournaments', 'activeTournaments'));
     }
 
     public function leaderboard(Request $request)
@@ -235,26 +240,7 @@ class PlayerSiteController extends Controller
 
     public function upgrade()
     {
-        Config::$serverKey = config('services.midtrans.server_key');
-        Config::$clientKey = config('services.midtrans.client_key');
-
-        $params = [
-            'transaction_details' => [
-                'order_id' => 'PREM-' . Auth::id() . '-' . time(),
-                'gross_amount' => 50000, // Price in IDR
-            ],
-            'customer_details' => [
-                'first_name' => Auth::user()->nickname,
-                // Make sure your users table actually has an email column, 
-                // or remove this line if they log in strictly with username!
-                'email' => Auth::user()->email ?? 'player@example.com', 
-            ],
-        ];
-
-        $snapToken = Snap::getSnapToken($params);
-
-        // Pass the token to the view
-        return view('player.upgrade', compact('snapToken'));
+        return view('player.upgrade');
     }
 
     public function editProfile()

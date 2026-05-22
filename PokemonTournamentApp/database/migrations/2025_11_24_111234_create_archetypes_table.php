@@ -17,7 +17,6 @@ return new class extends Migration
             $table->foreignId('key_card_id')->nullable()->constrained('cards')->nullOnDelete();
             $table->integer('times_played')->default(0);
             $table->integer('wins')->default(0);
-            $table->timestamps();
         });
     }
 

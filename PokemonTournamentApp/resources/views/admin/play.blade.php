@@ -1,6 +1,6 @@
-@extends('player.layout')
+@extends('admin.layout')
 
-@section('title', 'Playing Match')
+@section('title', 'Spectating Match')
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('unity-game/TemplateData/style.css') }}">
@@ -121,7 +121,8 @@
 {{-- ========================================== --}}
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    // ADDED doc and updateDoc to the imports
+    import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "{{ config('services.firebase.api_key') }}",
@@ -139,6 +140,9 @@
     const matchId = "{{ request()->query('match_id', 'lobby') }}"; 
     const playerName = "{{ auth()->user()->nickname ?? auth()->user()->name }}";
     
+    // Blade Check: Is the person looking at this page an Admin?
+    const isAdmin = {{ auth()->user()->role == 2 ? 'true' : 'false' }};
+    
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
     const chatMessages = document.getElementById('chatMessages');
@@ -152,17 +156,33 @@
     onSnapshot(chatQuery, (snapshot) => {
         chatMessages.innerHTML = ''; 
         
-        snapshot.forEach((doc) => {
-            const data = doc.data();
+        // Changed loop variable to 'docSnap' to avoid conflict with Firestore's 'doc' function
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
             
             const isMe = data.player_name === playerName;
             const alignClass = isMe ? 'text-right' : 'text-left';
             const bubbleColor = isMe ? 'bg-primary text-white' : 'bg-white border text-dark';
             
+            // Format styling if deleted
+            const isDeleted = data.message.includes("deleted by admin") || data.message.includes("deactivated");
+            let bubbleStyle = "max-width: 85%; font-size: 0.9rem;";
+            if (isDeleted) {
+                bubbleStyle += " font-style: italic; color: #dc3545 !important;";
+            }
+            
             chatMessages.innerHTML += `
                 <div class="mb-3 ${alignClass}">
-                    <strong class="d-block text-muted mb-1" style="font-size: 0.75rem;">${data.player_name}</strong>
-                    <div class="${bubbleColor} p-2 rounded d-inline-block shadow-sm text-left" style="max-width: 85%; font-size: 0.9rem;">
+                    <div class="mb-1">
+                        <strong class="text-muted" style="font-size: 0.75rem;">${data.player_name}</strong>
+                        ${isAdmin && !isDeleted ? `
+                            <span class="ml-2">
+                                <a href="javascript:void(0)" class="text-secondary delete-btn" data-id="${docSnap.id}" style="font-size: 0.75rem;" title="Delete Message"><i class="fas fa-trash"></i></a>
+                                <a href="javascript:void(0)" class="text-danger ml-1 ban-btn" data-player-id="${data.player_id}" data-nickname="${data.player_name}" data-id="${docSnap.id}" style="font-size: 0.75rem;" title="Toggle Ban"><i class="fas fa-ban"></i></a>
+                            </span>
+                        ` : ''}
+                    </div>
+                    <div class="${bubbleColor} p-2 rounded d-inline-block shadow-sm text-left" style="${bubbleStyle}">
                         ${data.message}
                     </div>
                 </div>
@@ -170,6 +190,48 @@
         });
         
         chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Attach listeners ONLY if the user is an admin
+        if (isAdmin) {
+            // Delete Logic
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    if(confirm("Delete this message?")) {
+                        await updateDoc(doc(db, "chats", this.dataset.id), { message: "This message was deleted by admin." });
+                    }
+                });
+            });
+
+            // Ban Logic
+            document.querySelectorAll('.ban-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const playerId = this.dataset.playerId;
+                    const docId = this.dataset.id;
+                    const nickname = this.dataset.nickname;
+
+                    if (!playerId) {
+                        alert("Cannot ban this user (Missing Database ID in chat log).");
+                        return;
+                    }
+
+                    if(confirm(`Toggle ban status for ${nickname}?`)) {
+                        fetch(`/admin/players/${playerId}/toggle`, {
+                            method: "POST", 
+                            headers: { 
+                                "Content-Type": "application/json", 
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}", 
+                                "Accept": "application/json" 
+                            }
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) {
+                                alert(data.message);
+                                updateDoc(doc(db, "chats", docId), { message: `<span style='color: #dc3545; font-style: italic;'>[System: ${data.message}]</span>` });
+                            }
+                        });
+                    }
+                });
+            });
+        }
     });
 
     chatForm.addEventListener('submit', async (e) => {

@@ -33,6 +33,8 @@ class SetSeeder extends Seeder
                     'ptcgo_code' => $data['ptcgoCode'] ?? null,
                     'release_date' => $data['releaseDate'] ?? null,
                     'updated_at_api' => $data['updatedAt'] ?? null,
+                    'created_at' => $data['updatedAt'] ?? null,
+                    'updated_at' => $data['updatedAt'] ?? null,
                 ]
             );
 

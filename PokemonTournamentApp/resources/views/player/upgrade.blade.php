@@ -80,19 +80,40 @@
 {{-- Midtrans Snap Script --}}
 <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
 <script type="text/javascript">
-    document.getElementById('pay-button').onclick = function () {
-        window.snap.pay('{{ $snapToken }}', {
-            onSuccess: function(result) {
-                // You can redirect to a 'Thank You' page that checks the DB
-                window.location.href = "{{ route('player.home') }}";
-            },
-            onPending: function(result) {
-                alert("Waiting for your payment!");
-            },
-            onError: function(result) {
-                alert("Payment failed!");
-            }
-        });
+    document.getElementById('pay-button').onclick = async function () {
+        const btn = this;
+        btn.innerHTML = "Processing...";
+        btn.disabled = true;
+        try {
+            const response = await fetch("{{ route('player.getSnapToken') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}" 
+                }
+            });
+            const data = await response.json();
+            window.snap.pay(data.snapToken, {
+                onSuccess: function(result) {
+                    window.location.href = "{{ route('player.home') }}";
+                },
+                onPending: function(result) {
+                    alert("Waiting for your payment!");
+                },
+                onError: function(result) {
+                    alert("Payment failed!");
+                },
+                onClose: function () {
+                    btn.innerHTML = "Upgrade to Premium";
+                    btn.disabled = false;
+                }
+            });
+        } catch (error) {
+            console.error("Error fetching snap token:", error);
+            alert("Something went wrong. Please try again.");
+            btn.innerHTML = "Upgrade to Premium";
+            btn.disabled = false;
+        }
     };
 </script>
 @endsection

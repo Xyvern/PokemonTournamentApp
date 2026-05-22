@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CardSubtype extends Model
 {
-    public $timestamps = true;
+    public $timestamps = false;
     protected $fillable = ['card_id', 'subtype'];
 
     public function card()

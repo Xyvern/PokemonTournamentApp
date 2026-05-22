@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('unlimited')->nullable();
             $table->string('standard')->nullable();
             $table->string('expanded')->nullable();
-            $table->timestamps();
         });
     }
 

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Archetype extends Model
 {
+    public $timestamps = false;
     protected $fillable = ['name', 'key_card_id', 'times_played', 'wins'];
 
     /**

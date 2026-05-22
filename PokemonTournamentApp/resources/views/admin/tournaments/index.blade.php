@@ -23,6 +23,8 @@
                                    class="btn {{ request('filter') === null ? 'btn-dark' : 'btn-outline-secondary' }}">All</a>
                                 <a href="{{ route('admin.tournaments.index', ['filter' => 'upcoming']) }}" 
                                    class="btn {{ request('filter') === 'upcoming' ? 'btn-dark' : 'btn-outline-secondary' }}">Upcoming</a>
+                                <a href="{{ route('admin.tournaments.index', ['filter' => 'active']) }}" 
+                                   class="btn {{ request('filter') === 'active' ? 'btn-dark' : 'btn-outline-secondary' }}">Active</a>
                                 <a href="{{ route('admin.tournaments.index', ['filter' => 'completed']) }}" 
                                    class="btn {{ request('filter') === 'completed' ? 'btn-dark' : 'btn-outline-secondary' }}">Completed</a>
                             </div>

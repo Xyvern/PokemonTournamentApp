@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CardType extends Model
 {
-    public $timestamps = true;
+    public $timestamps = false;
     protected $fillable = ['card_id', 'type'];
 
     public function card()

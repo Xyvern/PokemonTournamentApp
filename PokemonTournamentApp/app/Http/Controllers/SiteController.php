@@ -86,6 +86,12 @@ class SiteController extends Controller
                     ->orderByDesc('start_date');
                 break;
 
+                case 'active':
+                // Active tournaments
+                $query->where('status', 'active')
+                    ->orderBy('start_date', 'asc');
+                break;
+
             default:
                 // "All" view (Default) - sort by newest first
                 $query->orderByDesc('start_date');

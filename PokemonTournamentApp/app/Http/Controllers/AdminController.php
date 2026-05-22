@@ -13,15 +13,18 @@ use App\Models\User;
 use App\Services\ArchetypeService;
 use App\Services\EloCalculator;
 use Illuminate\Http\Request;
-
 use App\Services\SwissPairingGenerator;
 use App\Services\TournamentServices;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
+    /**
+     * Updates the result of a specific tournament match.
+     */
     public function updateMatchResult(Request $request, $id)
     {
         $request->validate([
@@ -32,69 +35,67 @@ class AdminController extends Controller
         $tournament = Tournament::findOrFail($id);
         $match = TournamentMatch::findOrFail($request->match_id);
 
-        // Security 1: Does this match belong to this tournament?
         if ($match->tournament_id !== $tournament->id) {
             return back()->with('error', 'Unauthorized action.');
         }
 
-        // Security 2: Is this the current active round?
         $currentActiveRound = $tournament->matches->max('round_number') ?? 1;
         
         if ($tournament->status !== 'active' || $match->round_number != $currentActiveRound) {
             return back()->with('error', 'You can only edit match results in the current active round.');
         }
 
-        // Apply the override
         $match->result_code = $request->result_code;
         $match->save();
 
         return back()->with('success', 'Match result updated successfully!');
     }
 
+    /**
+     * Fetches the HTML partial for a specific tournament round's matches.
+     */
     public function fetchRoundMatches(Request $request, $id) 
     {
         $tournament = Tournament::findOrFail($id);
         $round = $request->query('round', 1);
         
         $matches = $tournament->getMatchesForRound($round);
-
-        // 1. Check if the frontend asked for the admin view
         $isAdmin = $request->query('admin') === 'true';
 
-        // 2. Return the correct partial path and pass the isAdmin flag
         return view('admin.tournaments.partials.matches_rows', [
             'matches' => $matches,
             'isAdmin' => $isAdmin
         ]);
     }
 
+    /**
+     * Initiates a tournament, locks registration, and generates the first round of pairings.
+     */
     public function startTournament(Request $request, $id, SwissPairingGenerator $pairingGenerator)
     {
         $tournament = Tournament::findOrFail($id);
 
-        // 1. Safety Check: Is it actually in registration?
         if ($tournament->status !== 'registration') {
             return back()->with('error', 'This tournament has already started or is completed.');
         }
 
-        // 2. Fetch all eligible players (exclude any who dropped during registration)
         $entries = $tournament->entries()->get();
 
-        // 3. Safety Check: Do we have enough players?
         if ($entries->count() < 2) {
             return back()->with('error', 'You need at least 2 players to start a tournament.');
         }
 
-        // 4. Generate Round 1 Pairings using your Swiss service
         $pairingGenerator->generatePairings($entries, 1);
 
-        // 5. Lock registration and set the tournament to active
         $tournament->status = 'active';
         $tournament->save();
 
         return back()->with('success', 'Tournament started! Round 1 pairings have been generated.');
     }
 
+    /**
+     * Drops a player from a tournament, either removing them from registration or conceding their active match.
+     */
     public function dropPlayer(Request $request, $id)
     {
         $request->validate([
@@ -115,7 +116,6 @@ class AdminController extends Controller
             return back()->with('error', 'This player has already dropped from the tournament.');
         }
 
-        // NEW LOGIC: If the tournament hasn't started yet, physically remove them to free up capacity
         if ($tournament->status === 'registration') {
             $nickname = $entry->user->nickname;
             $entry->delete();
@@ -124,11 +124,11 @@ class AdminController extends Controller
             return back()->with('success', "{$nickname} has been removed from the registration list.");
         }
 
-        // ORIGINAL LOGIC: If the tournament is active, flag them as dropped and concede matches
         $entry->is_dropped = true;
         $entry->save();
 
         $currentRound = $tournament->matches()->max('round_number');
+        
         if ($currentRound) {
             $activeMatch = TournamentMatch::where('round_number', $currentRound)
                 ->whereNull('result_code')
@@ -146,6 +146,9 @@ class AdminController extends Controller
         return back()->with('success', "{$entry->user->nickname} has been dropped and their active match conceded.");
     }
 
+    /**
+     * Processes the current round's statistics and generates pairings for the next round.
+     */
     public function generateNextRound(
         Request $request, 
         $id, 
@@ -161,7 +164,6 @@ class AdminController extends Controller
 
         $currentRound = $tournament->matches()->max('round_number') ?? 1;
 
-        // 1. Ensure all matches are reported
         $unreportedMatches = TournamentMatch::where('tournament_id', $tournament->id)
             ->where('round_number', $currentRound)
             ->whereNull('result_code')
@@ -171,20 +173,14 @@ class AdminController extends Controller
             return back()->with('error', "Cannot generate next round. {$unreportedMatches} matches are still in progress.");
         }
 
-        // 2. Are we trying to generate a round past the limit?
         if ($currentRound >= $tournament->total_rounds) {
             return back()->with('error', 'This was the final round! Please click "Finalize Tournament" instead.');
         }
 
-        // 3. Process the stats for the round that just finished!
         $tournamentServices->processRoundStats($tournament->id, $currentRound, $eloCalculator);
-
-        // NEW: Update Rankings and Tiebreakers
         $tournamentServices->updateStandingsAndTiebreakers($tournament->id);
 
-        // 4. Generate the new pairings
         $activeEntries = $tournament->entries()->where('is_dropped', false)->get();
-
         $nextRound = $currentRound + 1;
         
         $pairingGenerator->generatePairings($activeEntries, $nextRound);
@@ -193,7 +189,7 @@ class AdminController extends Controller
     }
 
     /**
-     * Finalize the tournament after the last round.
+     * Finalizes a tournament, locks all statistics, and updates global standings and Elo ratings.
      */
     public function finalizeTournament(
         Request $request, 
@@ -209,7 +205,6 @@ class AdminController extends Controller
 
         $currentRound = $tournament->matches()->max('round_number');
 
-        // 1. Ensure all matches in the final round are reported
         $unreportedMatches = TournamentMatch::where('tournament_id', $tournament->id)
             ->where('round_number', $currentRound)
             ->whereNull('result_code')
@@ -219,22 +214,19 @@ class AdminController extends Controller
             return back()->with('error', "Cannot finalize. {$unreportedMatches} matches are still in progress.");
         }
 
-        // 2. Process the stats for the final round
         $tournamentServices->processRoundStats($tournament->id, $currentRound, $eloCalculator);
-
-        // NEW: Do one final Ranking update for the official final standings
         $tournamentServices->updateStandingsAndTiebreakers($tournament->id);
-
-        // 3. Process Archetype stats for the whole tournament
         $tournamentServices->processArchetypeStats($tournament->id);
 
-        // 4. Close the tournament
         $tournament->status = 'completed';
         $tournament->save();
 
         return back()->with('success', 'Tournament finalized successfully! All stats and Elo ratings have been locked.');
     }
     
+    /**
+     * Assigns an archetype to a global deck and recalculates archetype statistics.
+     */
     public function assignArchetype(Request $request, ArchetypeService $archetypeService)
     {
         $request->validate([
@@ -245,9 +237,7 @@ class AdminController extends Controller
         $globalDeck = GlobalDeck::findOrFail($request->global_deck_id);
         $archetypeId = $request->archetype_id;
 
-        // If the admin selected "Create New"
         if ($archetypeId === 'new' && $request->filled('new_archetype_name')) {
-            // Grab the very first card in the deck to act as a placeholder Key Card
             $firstContent = $globalDeck->contents()->first();
             
             $newArchetype = Archetype::create([
@@ -257,11 +247,10 @@ class AdminController extends Controller
             $archetypeId = $newArchetype->id;
         }
 
-        // Assign it to the Global Deck
         $globalDeck->update(['archetype_id' => $archetypeId]);
 
-        // Trigger the recalculation so this deck's stats are immediately added to the archetype
         $archetype = Archetype::find($archetypeId);
+        
         if ($archetype) {
             $archetypeService->recalculateArchetypeStats($archetype);
         }
@@ -269,18 +258,19 @@ class AdminController extends Controller
         return back()->with('success', 'Archetype successfully assigned! Stats recalculated.');
     }
 
+    /**
+     * Synchronizes the local database with the official Pokémon TCG API to fetch new sets and cards.
+     */
     public function syncCards()
     {
-        set_time_limit(0); // Prevent timeout during large API pulls
+        set_time_limit(0); 
 
         $apiKey = env('POKEMON_TCG_API_KEY');
 
-        // 1. Find the latest release date in your DB
-        $latestSet = \App\Models\Set::orderBy('release_date', 'desc')->first();
-        $latestDate = $latestSet ? \Carbon\Carbon::parse($latestSet->release_date) : null;
+        $latestSet = Set::orderBy('release_date', 'desc')->first();
+        $latestDate = $latestSet ? Carbon::parse($latestSet->release_date) : null;
 
-        // 2. Fetch ALL Sets, ordered Newest to Oldest
-        $setsResponse = \Illuminate\Support\Facades\Http::withHeaders([
+        $setsResponse = Http::withHeaders([
             'X-Api-Key' => $apiKey
         ])->get("https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate");
         
@@ -297,28 +287,24 @@ class AdminController extends Controller
         $cardsAdded = 0;
         $setsAdded = 0;
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($allSets, $latestDate, &$cardsAdded, &$setsAdded, $apiKey) {
+        DB::transaction(function () use ($allSets, $latestDate, &$cardsAdded, &$setsAdded, $apiKey) {
             foreach ($allSets as $setData) {
                 
-                $apiSetDate = \Carbon\Carbon::parse($setData['releaseDate']);
+                $apiSetDate = Carbon::parse($setData['releaseDate']);
 
-                // Rule 1: Break if the set is older than our database
                 if ($latestDate && $apiSetDate->lt($latestDate)) {
                     break;
                 }
 
-                // Rule 2: Skip non-Standard sets
                 if (!isset($setData['legalities']['standard']) || strtolower($setData['legalities']['standard']) !== 'legal') {
                     continue;
                 }
 
-                // Rule 3: Skip if it already exists
-                if (\App\Models\Set::where('api_id', $setData['id'])->exists()) {
+                if (Set::where('api_id', $setData['id'])->exists()) {
                     continue; 
                 }
 
-                // --- 3. Create the Set ---
-                $set = \App\Models\Set::create([
+                $set = Set::create([
                     'api_id'         => $setData['id'],
                     'name'           => $setData['name'],
                     'series'         => $setData['series'] ?? 'Unknown',
@@ -329,7 +315,6 @@ class AdminController extends Controller
                     'updated_at_api' => $setData['updatedAt'] ?? null,
                 ]);
 
-                // Set Relations
                 if (isset($setData['legalities'])) {
                     $set->legalities()->create($setData['legalities']);
                 }
@@ -340,8 +325,7 @@ class AdminController extends Controller
                 
                 $setsAdded++;
 
-                // --- 4. Fetch Cards for this specific NEW Set ---
-                $cardsResponse = \Illuminate\Support\Facades\Http::withHeaders([
+                $cardsResponse = Http::withHeaders([
                     'X-Api-Key' => $apiKey
                 ])->get("https://api.pokemontcg.io/v2/cards", [
                     'q' => "set.id:{$setData['id']}"
@@ -352,8 +336,7 @@ class AdminController extends Controller
                     
                     foreach ($cardsData as $cardData) {
                         
-                        // Create main card
-                        $card = \App\Models\Card::create([
+                        $card = Card::create([
                             'api_id'                 => $cardData['id'] ?? null,
                             'set_id'                 => $set->id,
                             'name'                   => $cardData['name'] ?? null,
@@ -365,10 +348,9 @@ class AdminController extends Controller
                             'number'                 => $cardData['number'] ?? null,
                             'artist'                 => $cardData['artist'] ?? null,
                             'converted_retreat_cost' => $cardData['convertedRetreatCost'] ?? null,
-                            'is_playable'            => true, // Assumed true as we are filtering strictly by standard sets
+                            'is_playable'            => true,
                         ]);
 
-                        // Subtypes
                         foreach ($cardData['subtypes'] ?? [] as $subtype) {
                             \App\Models\CardSubtype::create([
                                 'card_id' => $card->id,
@@ -376,7 +358,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // Types
                         foreach ($cardData['types'] ?? [] as $type) {
                             \App\Models\CardType::create([
                                 'card_id' => $card->id,
@@ -384,7 +365,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // Rules
                         foreach ($cardData['rules'] ?? [] as $ruleText) {
                             \App\Models\CardRule::create([
                                 'card_id' => $card->id,
@@ -392,7 +372,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // Abilities
                         foreach ($cardData['abilities'] ?? [] as $ability) {
                             \App\Models\CardAbility::create([
                                 'card_id' => $card->id,
@@ -402,7 +381,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // Attacks & Attack Costs
                         foreach ($cardData['attacks'] ?? [] as $attackData) {
                             $attack = \App\Models\CardAttack::create([
                                 'card_id' => $card->id,
@@ -420,7 +398,6 @@ class AdminController extends Controller
                             }
                         }
 
-                        // Weaknesses
                         foreach ($cardData['weaknesses'] ?? [] as $weakness) {
                             \App\Models\CardWeakness::create([
                                 'card_id' => $card->id,
@@ -429,7 +406,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // Retreat Cost
                         foreach ($cardData['retreatCost'] ?? [] as $cost) {
                             \App\Models\CardRetreatCost::create([
                                 'card_id' => $card->id,
@@ -437,7 +413,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // National Pokedex Numbers
                         foreach ($cardData['nationalPokedexNumbers'] ?? [] as $num) {
                             \App\Models\CardPokedexNumber::create([
                                 'card_id' => $card->id,
@@ -445,7 +420,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // Legalities
                         foreach ($cardData['legalities'] ?? [] as $format => $status) {
                             \App\Models\CardLegality::create([
                                 'card_id' => $card->id,
@@ -454,7 +428,6 @@ class AdminController extends Controller
                             ]);
                         }
 
-                        // Images
                         if (isset($cardData['images'])) {
                             \App\Models\CardImage::create([
                                 'card_id' => $card->id,
@@ -466,7 +439,7 @@ class AdminController extends Controller
                         $cardsAdded++;
                     }
                 } else {
-                    \Illuminate\Support\Facades\Log::warning("Failed to fetch cards for set: {$setData['id']}");
+                    Log::warning("Failed to fetch cards for set: {$setData['id']}");
                 }
             }
         });
@@ -478,6 +451,9 @@ class AdminController extends Controller
         return back()->with('success', "Successfully synced {$setsAdded} new sets and {$cardsAdded} new cards!");
     }
 
+    /**
+     * Creates a new tournament and opens it for registration.
+     */
     public function storeTournament(Request $request)
     {
         $request->validate([
@@ -493,38 +469,71 @@ class AdminController extends Controller
             'capacity'          => $request->capacity,
             'total_rounds'      => $request->total_rounds,
             'registered_player' => 0,
-            'status'            => 'registration', // Always starts in registration phase
+            'status'            => 'registration',
         ]);
 
         return redirect()->route('admin.tournaments.index')->with('success', 'Tournament created and opened for registration!');
     }
 
-    public function togglePlayerStatus($id)
+    /**
+     * Toggles a user's active status (ban/unban) using soft deletes.
+     */
+    public function togglePlayerStatus($id, Request $request)
     {
         $player = User::withTrashed()->findOrFail($id);
         
         if ($player->trashed()) {
-            $player->restore(); // Reactivate
+            $player->restore();
             $status = 'activated';
         } else {
-            $player->delete(); // Deactivate (Soft Delete)
+            $player->delete();
             $status = 'deactivated';
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Player '{$player->nickname}' has been successfully {$status}."
+            ]);
         }
 
         return back()->with('success', "Player '{$player->nickname}' has been successfully {$status}.");
     }
 
+    /**
+     * Bans a player using their nickname via AJAX request.
+     */
+    public function banPlayerByNickname(Request $request)
+    {
+        $request->validate(['nickname' => 'required|string']);
+        
+        $user = User::where('nickname', $request->nickname)->first();
+
+        if ($user) {
+            $user->delete();
+            return response()->json(['success' => true, 'message' => 'User banned successfully.']);
+        }
+        
+        return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+    }
+
+    /**
+     * Creates a new deck archetype.
+     */
     public function storeArchetype(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'api_id' => 'nullable|string' // e.g., 'sv6-130'
+            'api_id' => 'nullable|string'
         ]);
 
         $keyCardId = null;
+        
         if ($request->api_id) {
             $card = Card::where('api_id', $request->api_id)->first();
-            if ($card) $keyCardId = $card->id;
+            if ($card) {
+                $keyCardId = $card->id;
+            }
         }
 
         Archetype::create([
@@ -537,6 +546,9 @@ class AdminController extends Controller
         return back()->with('success', 'Archetype created successfully!');
     }
 
+    /**
+     * Updates an existing deck archetype.
+     */
     public function updateArchetype(Request $request, $id)
     {
         $request->validate([
@@ -547,8 +559,10 @@ class AdminController extends Controller
         $archetype = Archetype::findOrFail($id);
         
         $keyCardId = $archetype->key_card_id;
+        
         if ($request->api_id) {
             $card = Card::where('api_id', $request->api_id)->first();
+            
             if ($card) {
                 $keyCardId = $card->id;
             } else {
@@ -564,11 +578,13 @@ class AdminController extends Controller
         return back()->with('success', 'Archetype updated successfully!');
     }
 
+    /**
+     * Toggles the playable status of a specific card.
+     */
     public function togglePlayable($id)
     {
-        $card = \App\Models\Card::findOrFail($id);
+        $card = Card::findOrFail($id);
         
-        // Flip the boolean (true becomes false, false becomes true)
         $card->is_playable = !$card->is_playable;
         $card->save();
 
@@ -577,6 +593,9 @@ class AdminController extends Controller
         return back()->with('success', "Card '{$card->name}' has been marked as {$statusText}.");
     }
 
+    /**
+     * Cancels a tournament currently in the registration phase and drops all players.
+     */
     public function cancelTournament($id)
     {
         $tournament = Tournament::findOrFail($id);
@@ -585,13 +604,41 @@ class AdminController extends Controller
             return back()->with('error', 'You can only cancel tournaments that are in the registration phase.');
         }
 
-        // 1. Mark all current entries as dropped
         $tournament->entries()->update(['is_dropped' => true]);
 
-        // 2. Change status to completed so it locks
         $tournament->status = 'completed';
         $tournament->save();
 
         return back()->with('success', 'Tournament has been cancelled. All registered players have been dropped.');
+    }
+
+    /**
+     * Updates the configuration details of an existing tournament.
+     */
+    public function updateTournament(Request $request, $id)
+    {
+        $tournament = Tournament::findOrFail($id);
+
+        $validated = $request->validate([
+            'name'         => 'required|string|max:255',
+            'start_date'   => 'required|date',
+            'capacity'     => 'required|integer|min:4|max:16',
+            'total_rounds' => 'required|integer|min:1|max:10',
+        ]);
+
+        if ($validated['capacity'] < $tournament->registered_player) {
+            return back()->withInput()->withErrors([
+                'capacity' => "You cannot reduce capacity below {$tournament->registered_player} because players are already registered. Drop players first."
+            ]);
+        }
+
+        $tournament->name = $validated['name'];
+        $tournament->start_date = $validated['start_date'];
+        $tournament->capacity = $validated['capacity'];
+        $tournament->total_rounds = $validated['total_rounds'];
+        $tournament->save();
+
+        return redirect()->route('admin.tournaments.detail', $tournament->id)
+                         ->with('success', 'Tournament updated successfully!');
     }
 }

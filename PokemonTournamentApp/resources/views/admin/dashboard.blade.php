@@ -19,8 +19,12 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Players</div>
-                            <div class="h3 mb-0 font-weight-bold text-dark">{{ number_format($stats['total_players']) }}</div>
+                            {{-- CHANGED: Now displays Premium / Total --}}
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Premium / Total Players</div>
+                            <div class="h3 mb-0 font-weight-bold text-dark">
+                                {{ number_format($stats['premium_players']) }} 
+                                <span class="text-muted" style="font-size: 1.2rem;">/ {{ number_format($stats['total_players']) }}</span>
+                            </div>
                         </div>
                         <i class="fas fa-users fa-2x text-muted opacity-50"></i>
                     </div>
@@ -61,11 +65,9 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            {{-- CHANGED: Updated Title and Variable --}}
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Player Decks</div>
                             <div class="h3 mb-0 font-weight-bold text-dark">{{ number_format($stats['total_decks']) }}</div>
                         </div>
-                        {{-- CHANGED: Swapped the icon to a stacked box/deck icon --}}
                         <i class="fas fa-box-open fa-2x text-muted opacity-50"></i>
                     </div>
                 </div>
@@ -105,11 +107,9 @@
     </div>
 
     {{-- 3. CHARTS ROW 2 (Line Chart) --}}
-    <div class="row mb-5">
+    <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm border-0">
-                
-                {{-- CHANGED: Removed justify-content-between, added ml-auto to the button --}}
                 <div class="card-header bg-white border-0 pt-4 pb-0 d-flex align-items-center">
                     <h6 class="font-weight-bold text-dark mb-0">
                         <i class="fas fa-chart-line text-info mr-2"></i> Tournament Attendance Trends
@@ -128,6 +128,213 @@
         </div>
     </div>
 
+    {{-- 4. NEW: TRANSACTION HISTORY & PLAYER REPORT ROW --}}
+    <div class="row mb-5">
+        
+        {{-- Recent Transactions --}}
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-3">
+                    <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-receipt text-secondary mr-2"></i> Recent Subscriptions</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>User</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recentTransactions as $tx)
+                                    <tr>
+                                        <td class="text-muted small align-middle">{{ $tx->created_at->format('d M Y, H:i') }}</td>
+                                        <td class="font-weight-bold align-middle">{{ $tx->user->nickname ?? 'Unknown' }}</td>
+                                        <td class="align-middle">Rp {{ number_format($tx->gross_amount, 0, ',', '.') }}</td>
+                                        <td class="align-middle">
+                                            @if($tx->status == 'settlement' || $tx->status == 'capture')
+                                                <span class="badge badge-success">Success</span>
+                                            @elseif($tx->status == 'pending')
+                                                <span class="badge badge-warning">Pending</span>
+                                            @else
+                                                <span class="badge badge-danger">{{ ucfirst($tx->status) }}</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">No transactions found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Player Competitive Report --}}
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-3 d-flex align-items-center">
+                    <h6 class="font-weight-bold text-dark mb-0"><i class="fas fa-medal text-warning mr-2"></i> Player Leaderboard & Report</h6>
+                    <a href="{{ route('admin.players.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill ml-auto">Manage</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover mb-0" id="playerTable">
+                            <thead class="thead-light" style="position: sticky; top: 0; z-index: 1;">
+                                <tr>
+                                    <th>
+                                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'dir' => request('sort') == 'name' && request('dir') == 'asc' ? 'desc' : 'asc']) }}" class="text-dark text-decoration-none">
+                                            Player 
+                                            <i class="fas fa-sort{{ request('sort') == 'name' ? (request('dir') == 'asc' ? '-up' : '-down') : ' text-muted' }} ml-1"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'elo', 'dir' => request('sort', 'elo') == 'elo' && request('dir', 'desc') == 'desc' ? 'asc' : 'desc']) }}" class="text-dark text-decoration-none">
+                                            ELO 
+                                            <i class="fas fa-sort{{ request('sort', 'elo') == 'elo' ? (request('dir', 'desc') == 'asc' ? '-up' : '-down') : ' text-muted' }} ml-1"></i>
+                                        </a>
+                                    </th>
+                                    <th class="text-center">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'rank_1', 'dir' => request('sort') == 'rank_1' && request('dir') == 'desc' ? 'asc' : 'desc']) }}" class="text-dark text-decoration-none">
+                                            Rank 1 Wins 
+                                            <i class="fas fa-sort{{ request('sort') == 'rank_1' ? (request('dir') == 'asc' ? '-up' : '-down') : ' text-muted' }} ml-1"></i>
+                                        </a>
+                                    </th>
+                                    <th class="text-center">
+                                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'sessions', 'dir' => request('sort') == 'sessions' && request('dir') == 'desc' ? 'asc' : 'desc']) }}" class="text-dark text-decoration-none">
+                                            Sessions 
+                                            <i class="fas fa-sort{{ request('sort') == 'sessions' ? (request('dir') == 'asc' ? '-up' : '-down') : ' text-muted' }} ml-1"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'last_active', 'dir' => request('sort') == 'last_active' && request('dir') == 'desc' ? 'asc' : 'desc']) }}" class="text-dark text-decoration-none">
+                                            Last Active 
+                                            <i class="fas fa-sort{{ request('sort') == 'last_active' ? (request('dir') == 'asc' ? '-up' : '-down') : ' text-muted' }} ml-1"></i>
+                                        </a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($playerReports as $player)
+                                    <tr>
+                                        {{-- data-sort allows JS to sort raw data instead of HTML tags --}}
+                                        <td data-sort="{{ strtolower($player->nickname) }}" class="font-weight-bold align-middle">
+                                            {{ $player->nickname }}
+                                        </td>
+                                        
+                                        <td data-sort="{{ $player->elo }}" class="align-middle">
+                                            <span class="badge badge-primary px-2 py-1">{{ $player->elo }}</span>
+                                        </td>
+                                        
+                                        <td data-sort="{{ $player->rank_1_count }}" class="align-middle text-center">
+                                            @if($player->rank_1_count > 0)
+                                                <i class="fas fa-trophy text-warning mr-1"></i> {{ $player->rank_1_count }}
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        
+                                        <td data-sort="{{ $player->total_sessions }}" class="align-middle text-center">
+                                            {{ $player->total_sessions }}
+                                        </td>
+                                        
+                                        {{-- Using strtotime() converts the date to a simple number that is very easy for JS to sort --}}
+                                        <td data-sort="{{ $player->tournament_entries_max_created_at ? strtotime($player->tournament_entries_max_created_at) : 0 }}" class="text-muted small align-middle">
+                                            {{ $player->tournament_entries_max_created_at ? \Carbon\Carbon::parse($player->tournament_entries_max_created_at)->format('d M Y') : 'Never' }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">No player data available.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    {{-- 5. ONGOING & UPCOMING TOURNAMENTS --}}
+    <div class="row mb-5">
+        {{-- Active Tournaments --}}
+        <div class="col-md-6 mb-4 mb-md-0">
+            {{-- CHANGED: Updated Title and Border Color to Primary Blue --}}
+            <h2 class="h4 font-weight-bold" style="margin-top: 2vh; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Active Tournaments</h2>
+            
+            @if ($activeTournaments->isEmpty())
+                <div class="alert alert-light border" style="margin-top: 2vh;">No active tournaments found.</div>
+            @else
+                <div class="d-flex flex-column gap-3" style="margin-top: 2vh;">
+                    @foreach ($activeTournaments as $item)
+                        <a href="{{ route('admin.tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
+                            <div class="info-box shadow-sm mb-3 hover-lift" style="border-radius: 8px; transition: transform 0.2s;">
+                                {{-- CHANGED: Replaced bg-secondary with bg-primary and made text white --}}
+                                <span class="info-box-icon bg-primary d-flex flex-column justify-content-center align-items-center rounded-left" style="font-size: 1.5rem; min-width: 80px;">
+                                    <span style="font-size: 1.5rem; font-weight: bold; color: white;">{{ $item->capacity }}</span>
+                                    <span style="font-size: 0.8rem; color: white;">Max</span>
+                                </span>
+
+                                <div class="info-box-content p-3">
+                                    <span class="info-box-text text-dark" style="font-weight: bold; font-size: 1.1rem;">{{ $item->name }}</span>
+                                    <div class="info-box-number text-muted mt-1" style="font-weight: 500; font-size: 0.9rem;">
+                                        <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ \Carbon\Carbon::parse($item->start_date)->format('d M Y') }}</p>
+                                        <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+                
+                <div class="text-right mt-2">
+                    {{-- CHANGED: Button is now btn-outline-primary and filters by active --}}
+                    <a href="{{ route('admin.tournaments.index', ['filter' => 'active']) }}" class="btn btn-sm btn-outline-primary rounded-pill">See all active tournaments &rarr;</a>
+                </div>
+            @endif
+        </div>
+
+        {{-- Upcoming Tournaments --}}
+        <div class="col-md-6">
+            <h2 class="h4 font-weight-bold" style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Upcoming Tournaments</h2>
+
+            @if ($upcomingTournaments->isEmpty())
+                <div class="alert alert-light border" style="margin-top: 2vh;">No upcoming tournaments found.</div>
+            @else
+                <div class="d-flex flex-column gap-3" style="margin-top: 2vh;">
+                    @foreach ($upcomingTournaments as $item)
+                        <a href="{{ route('admin.tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
+                            <div class="info-box shadow-sm mb-3 hover-lift" style="border-radius: 8px; transition: transform 0.2s;">
+                                <span class="info-box-icon bg-info d-flex flex-column justify-content-center align-items-center rounded-left" style="font-size: 1.5rem; min-width: 80px;">
+                                    <span style="font-size: 1.5rem; font-weight: bold; color: white;">{{ $item->capacity }}</span>
+                                    <span style="font-size: 0.8rem; color: white;">Max</span>
+                                </span>
+
+                                <div class="info-box-content p-3">
+                                    <span class="info-box-text text-dark" style="font-weight: bold; font-size: 1.1rem;">{{ $item->name }}</span>
+                                    <div class="info-box-number text-muted mt-1" style="font-weight: 500; font-size: 0.9rem;">
+                                        <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ \Carbon\Carbon::parse($item->start_date)->format('d M Y') }}</p>
+                                        <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+
+                <div class="text-right mt-2">
+                    <a href="{{ route('admin.tournaments.index', ['filter' => 'upcoming']) }}" class="btn btn-sm btn-outline-info rounded-pill">See all upcoming tournaments &rarr;</a>
+                </div>
+            @endif
+        </div>
+    </div> 
 </div>
 @endsection
 

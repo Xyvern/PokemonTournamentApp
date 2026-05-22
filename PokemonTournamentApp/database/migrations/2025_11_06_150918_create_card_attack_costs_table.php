@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('card_attack_id')->constrained('card_attacks')->onDelete('cascade');
             $table->string('cost');
-            $table->timestamps();
         });
     }
 
