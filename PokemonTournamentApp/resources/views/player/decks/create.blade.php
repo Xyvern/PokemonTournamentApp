@@ -102,7 +102,7 @@
             <div class="panel-header">
                 <div class="form-group mb-0">
                     <label class="small font-weight-bold">DECK NAME</label>
-                    <input type="text" name="name" class="form-control" placeholder="Deck Name" value="Untitled Deck" required>
+                    <input type="text" name="name" class="form-control" placeholder="Deck Name" value="{{ $deckName ?? 'Untitled Deck' }}" required>
                 </div>
                 <h5 class="mt-3 mb-0">Your Deck (<span id="deckCount">0</span>/60)</h5>
             </div>
@@ -123,7 +123,7 @@
 </div>
 
 <script>
-let deck = {}; 
+let deck = @json($prefilledDeck ?? (object)[]); 
 const allCards = Array.from(document.querySelectorAll(".card-entry"));
 let filteredCards = [...allCards]; 
 let currentPage = 1;
@@ -258,6 +258,9 @@ document.addEventListener("DOMContentLoaded", () => {
     filterCards();
     document.getElementById("searchInput").addEventListener("input", filterCards);
     document.getElementById("typeFilter").addEventListener("change", filterCards);
+    if (Object.keys(deck).length > 0) {
+        renderDeck();
+    }
 });
 </script>
 @endsection

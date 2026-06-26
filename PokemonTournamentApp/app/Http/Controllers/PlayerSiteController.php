@@ -207,10 +207,39 @@ class PlayerSiteController extends Controller
         return view('player.mydecks', compact('decks'));
     }
 
-    public function createDeck()
+    public function createDeck(Request $request)
     {
         $cards = Card::where('is_playable', true)->get();
-        return view('player.decks.create', compact('cards'));
+        
+        $deckName = 'Untitled Deck';
+        $prefilledDeck = [];
+        if ($request->has('copy')) {
+            $globalDeck = GlobalDeck::where('deck_hash', $request->query('copy'))
+                ->with(['cards.subtypes', 'cards.images'])
+                ->first();
+            if ($globalDeck) {
+                $originalDeck = Deck::where('global_deck_id', $globalDeck->id)->first();
+                if ($originalDeck) {
+                    $deckName = 'Copy of ' . $originalDeck->name;
+                } else {
+                    $deckName = 'Copy of Deck';
+                }
+
+                foreach ($globalDeck->cards as $card) {
+                    $prefilledDeck[$card->id] = [
+                        'id' => $card->id,
+                        'name' => $card->name,
+                        'img' => $card->images ? $card->images->small : '',
+                        'api_id' => $card->api_id,
+                        'isAceSpec' => $card->subtypes->contains('subtype', 'ACE SPEC'),
+                        'isBasic' => $card->subtypes->contains('subtype', 'Basic'),
+                        'qty' => $card->pivot->quantity
+                    ];
+                }
+            }
+        }
+
+        return view('player.decks.create', compact('cards', 'prefilledDeck', 'deckName'));
     }
 
     public function playerSets()

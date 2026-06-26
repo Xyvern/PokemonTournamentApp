@@ -71,7 +71,14 @@
 @endphp
 
 <div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
-    <div class="p-4 rounded" style="background-color: #2b2b2b;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-dark font-weight-bold mb-0">{{ $deck->name }}</h3>
+        <button onclick="copyDeckAndRedirect('{{ $deck->globalDeck->deck_hash }}', '{{ route('player.createDeck', ['copy' => $deck->globalDeck->deck_hash]) }}')" class="btn btn-primary font-weight-bold px-4 shadow-sm">
+            <i class="fas fa-copy mr-2"></i> Copy Deck
+        </button>
+    </div>
+
+    <div class="p-4 rounded shadow-sm" style="background-color: #2b2b2b;">
         <div class="card-grid">
             @foreach($sortedCards as $card)
                 <div class="card-wrapper" title="{{ $card->name }}">
@@ -101,5 +108,31 @@
         </ul>
     @endif
 </div>
+
+@push('scripts')
+<script>
+function copyDeckAndRedirect(hash, redirectUrl) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(hash).then(function() {
+            $(document).Toasts('create', {
+                class: 'bg-success',
+                title: 'Copied',
+                icon: 'fas fa-copy fa-lg',
+                autohide: true,
+                delay: 2000,
+                body: 'Deck hash copied to clipboard!'
+            });
+            setTimeout(function() {
+                window.location.href = redirectUrl;
+            }, 1000);
+        }).catch(function(err) {
+            window.location.href = redirectUrl;
+        });
+    } else {
+        window.location.href = redirectUrl;
+    }
+}
+</script>
+@endpush
 
 @endsection

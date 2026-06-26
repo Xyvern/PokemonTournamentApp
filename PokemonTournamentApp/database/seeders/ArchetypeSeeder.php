@@ -129,47 +129,42 @@ class ArchetypeSeeder extends Seeder
         $userCreationDates = $players->pluck('created_at', 'id')->toArray();
         $nowTimestamp = time();
 
-        $this->command->info("--- Generating 1500 Random User Decks ---");
+        $this->command->info("--- Generating exactly 3 Decks per User ---");
         $decksToInsert = [];
         
         // NEW: Track the absolute earliest timestamp generated for each Global Deck
         $earliestGlobalDeckDates = [];
         
-        for ($i = 0; $i < 1612; $i++) {
-            // NEW: Pick a random index from the weighted pool instead of directly from the array
-            $poolIndex = $weightedTemplatePool[array_rand($weightedTemplatePool)];
-            $randomTemplate = $processedGlobalDecks[$poolIndex];
-            
-            $userId = $playerIds[array_rand($playerIds)];
-            
-            $userCreatedAt = strtotime($userCreationDates[$userId]);
-            $upperBound = max($nowTimestamp, $userCreatedAt + 1); 
-            $randomDeckTimestamp = mt_rand($userCreatedAt, $upperBound);
-            $randomDeckDate = date('Y-m-d H:i:s', $randomDeckTimestamp);
+        foreach ($playerIds as $userId) {
+            for ($d = 0; $d < 3; $d++) {
+                // NEW: Pick a random index from the weighted pool instead of directly from the array
+                $poolIndex = $weightedTemplatePool[array_rand($weightedTemplatePool)];
+                $randomTemplate = $processedGlobalDecks[$poolIndex];
+                
+                $userCreatedAt = strtotime($userCreationDates[$userId]);
+                $upperBound = max($nowTimestamp, $userCreatedAt + 1); 
+                $randomDeckTimestamp = mt_rand($userCreatedAt, $upperBound);
+                $randomDeckDate = date('Y-m-d H:i:s', $randomDeckTimestamp);
 
-            $globalDeckId = $randomTemplate['global_deck_id'];
-            
-            // NEW: Record the earliest date we've ever seen for this specific Global Deck
-            if (!isset($earliestGlobalDeckDates[$globalDeckId]) || $randomDeckTimestamp < $earliestGlobalDeckDates[$globalDeckId]) {
-                $earliestGlobalDeckDates[$globalDeckId] = $randomDeckTimestamp;
-            }
+                $globalDeckId = $randomTemplate['global_deck_id'];
+                
+                // NEW: Record the earliest date we've ever seen for this specific Global Deck
+                if (!isset($earliestGlobalDeckDates[$globalDeckId]) || $randomDeckTimestamp < $earliestGlobalDeckDates[$globalDeckId]) {
+                    $earliestGlobalDeckDates[$globalDeckId] = $randomDeckTimestamp;
+                }
 
-            $decksToInsert[] = [
-                'user_id' => $userId,
-                'global_deck_id' => $globalDeckId,
-                'name' => $randomTemplate['name_template'],
-                'created_at' => $randomDeckDate,
-                'updated_at' => $randomDeckDate,
-            ];
-
-            if (count($decksToInsert) === 500) {
-                Deck::insert($decksToInsert);
-                $decksToInsert = [];
+                $decksToInsert[] = [
+                    'user_id' => $userId,
+                    'global_deck_id' => $globalDeckId,
+                    'name' => $randomTemplate['name_template'],
+                    'created_at' => $randomDeckDate,
+                    'updated_at' => $randomDeckDate,
+                ];
             }
         }
 
-        if (!empty($decksToInsert)) {
-            Deck::insert($decksToInsert);
+        foreach (array_chunk($decksToInsert, 500) as $chunk) {
+            Deck::insert($chunk);
         }
         
         // NEW: Retroactively update Global Decks to match their earliest user deck timestamp

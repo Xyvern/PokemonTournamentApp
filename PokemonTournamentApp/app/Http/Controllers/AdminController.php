@@ -348,7 +348,7 @@ class AdminController extends Controller
                             'number'                 => $cardData['number'] ?? null,
                             'artist'                 => $cardData['artist'] ?? null,
                             'converted_retreat_cost' => $cardData['convertedRetreatCost'] ?? null,
-                            'is_playable'            => true,
+                            'is_playable'            => false,
                         ]);
 
                         foreach ($cardData['subtypes'] ?? [] as $subtype) {

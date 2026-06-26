@@ -137,7 +137,7 @@
     const db = getFirestore(app);
 
     const matchId = "{{ request()->query('match_id', 'lobby') }}"; 
-    const playerName = "{{ auth()->user()->nickname ?? auth()->user()->name }}";
+    const playerName = "{{ auth()->check() ? (auth()->user()->nickname ?? auth()->user()->name) : 'Guest' }}";
     
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
@@ -181,7 +181,7 @@
         await addDoc(collection(db, "chats"), {
             match_id: matchId,
             player_name: playerName,
-            player_id: "{{ auth()->user()->id }}",
+            player_id: "{{ auth()->check() ? auth()->user()->id : 'guest' }}",
             message: messageText,
             timestamp: serverTimestamp() 
         });

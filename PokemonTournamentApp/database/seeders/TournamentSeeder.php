@@ -34,18 +34,20 @@ class TournamentSeeder extends Seeder
 
         $players = User::whereNot('role', 2)->get();
 
-        $this->command->info("--- Generating Completed Tournaments (Fridays: June 2025 - Apr 2026) ---");
+        $this->command->info("--- Generating Completed Tournaments (Fridays: Sep 12, 2025 - Jun 19, 2026) ---");
         
-        // Start: First Friday of June 2025
-        $dateTracker = Carbon::parse('2025-06-06');
-        // End: Last Friday before today (April 20, 2026)
-        $endDate = Carbon::parse('2026-04-17'); 
+        // Start: Sep 12, 2025
+        $dateTracker = Carbon::parse('2025-09-12');
+        // End: Jun 19, 2026 (last Friday before today)
+        $endDate = Carbon::parse('2026-06-19'); 
         $completedCount = 0;
 
         while ($dateTracker->lte($endDate)) {
-            DB::transaction(function () use ($dateTracker, $players) {
-                $this->generateTournament('completed', clone $dateTracker, $players);
-            });
+            retry(5, function () use ($dateTracker, $players) {
+                DB::transaction(function () use ($dateTracker, $players) {
+                    $this->generateTournament('completed', clone $dateTracker, $players);
+                });
+            }, 100);
             $dateTracker->addWeek(); 
             $completedCount++;
             
@@ -54,18 +56,19 @@ class TournamentSeeder extends Seeder
             }
         }
 
-        $this->command->info("--- Generating 1 Active (Live) Tournament ---");
-        DB::transaction(function () use ($players) {
-            $this->generateTournament('active', now(), $players);
-        });
+        $this->command->info("--- Generating 1 Active (Live) Tournament (Jun 26, 2026) ---");
+        retry(5, function () use ($players) {
+            DB::transaction(function () use ($players) {
+                $this->generateTournament('active', Carbon::parse('2026-06-26'), $players);
+            });
+        }, 100);
 
-        $this->command->info("--- Generating 5 Upcoming (Registration) Tournaments ---");
-        $upcomingTracker = now()->next(Carbon::FRIDAY);
-        
-        for ($i = 1; $i <= 5; $i++) {
-            $this->generateTournament('registration', clone $upcomingTracker, $players);
-            $upcomingTracker->addWeek(); 
-        }
+        $this->command->info("--- Generating 1 Upcoming (Registration) Tournament (Jul 3, 2026) ---");
+        retry(5, function () use ($players) {
+            DB::transaction(function () use ($players) {
+                $this->generateTournament('registration', Carbon::parse('2026-07-03'), $players);
+            });
+        }, 100);
 
         $this->command->info("Tournament Seeder finished successfully!");
     }
@@ -75,12 +78,12 @@ class TournamentSeeder extends Seeder
         // Hardcode the start time to exactly 19:00:00
         $date->setTime(19, 0, 0);
 
-        // Tournament was created 1 week before the start date
-        $tournamentCreatedAt = $date->copy()->subWeek();
+        // Tournament was created randomly during the week prior to the start date
+        $tournamentCreatedAt = $date->copy()->subWeek()->addSeconds(mt_rand(0, 7 * 24 * 60 * 60));
 
-        // 1. Capacity Rules: 10 to 16 people
-        $capacity = rand(10, 16);
-        $playerCount = rand(10, $capacity);
+        // 1. Capacity Rules: 16 to 20 people
+        $capacity = rand(16, 20);
+        $playerCount = rand(16, $capacity);
         
         // Swiss rules: Usually 3 rounds for 8+, 4 rounds for 16+
         $totalRounds = max(3, ceil(log($playerCount, 2))); 
@@ -126,9 +129,36 @@ class TournamentSeeder extends Seeder
         foreach ($selectedPlayers as $player) {
             $deck = Deck::where('user_id', $player->id)->inRandomOrder()->first();
             
-            // Randomly pick a time exactly 1 to 7 days before the tournament starts
-            // 1440 minutes = 1 day, 10080 minutes = 7 days
-            $entryDate = $date->copy()->subMinutes(rand(1440, 10080));
+            // Randomly pick a time between when the tournament was created and when it starts
+            $createdTimestamp = $tournamentCreatedAt->timestamp;
+            $startTimestamp = $date->timestamp;
+            $entryTimestamp = mt_rand($createdTimestamp, $startTimestamp);
+            $entryDate = Carbon::createFromTimestamp($entryTimestamp);
+
+            // Time travel the deck's creation date if it is after the entry date
+            if ($deck && Carbon::parse($deck->created_at)->gt($entryDate)) {
+                $userCreatedAt = Carbon::parse($player->created_at)->timestamp;
+                $minTimestamp = min($userCreatedAt, $createdTimestamp);
+                if ($minTimestamp >= $entryTimestamp) {
+                    $minTimestamp = $entryTimestamp - 1;
+                }
+                $deckTimestamp = mt_rand($minTimestamp, $entryTimestamp);
+                $deckDate = Carbon::createFromTimestamp($deckTimestamp);
+                
+                $deck->timestamps = false;
+                $deck->created_at = $deckDate;
+                $deck->updated_at = $deckDate;
+                $deck->save();
+                
+                // Update global deck date if this is earlier
+                $globalDeck = $deck->globalDeck;
+                if ($globalDeck && (!$globalDeck->created_at || Carbon::parse($globalDeck->created_at)->gt($deckDate))) {
+                    $globalDeck->timestamps = false;
+                    $globalDeck->created_at = $deckDate;
+                    $globalDeck->updated_at = $deckDate;
+                    $globalDeck->save();
+                }
+            }
 
             $entry = new TournamentEntry([
                 'tournament_id'   => $tournament->id,
@@ -161,10 +191,10 @@ class TournamentSeeder extends Seeder
         }
 
         // 5. Realistic Match Dates Logic
-        // Mass update all matches generated in the loop above to match the tournament's timestamps
+        // Mass update all matches generated in the loop above to match the tournament's start date
         TournamentMatch::where('tournament_id', $tournament->id)->update([
-            'created_at' => $tournament->created_at,
-            'updated_at' => $tournament->updated_at
+            'created_at' => $date,
+            'updated_at' => $date
         ]);
 
         if ($status === 'completed') {
@@ -199,9 +229,9 @@ class TournamentSeeder extends Seeder
             }
 
             $rand = rand(1, 100);
-            if ($rand <= 48) {
+            if ($rand <= 49) {
                 $resultCode = 1; 
-            } elseif ($rand <= 96) {
+            } elseif ($rand <= 98) {
                 $resultCode = 2; 
             } else {
                 $resultCode = 3; 
