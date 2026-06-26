@@ -50,7 +50,7 @@
     }
 </style>
 
-<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+<div class="responsive-container">
     
     {{-- 1. HEADER SECTION --}}
     <div class="profile-card">
@@ -101,7 +101,7 @@
                     </div>
                     <div class="col-6">
                         <h5 class="font-weight-bold mb-0 text-primary">
-                            {{ $bestFinish ? Number::ordinal($bestFinish) : '-' }}
+                            {{ $bestFinish ? \App\Helpers\NumberHelper::ordinal($bestFinish) : '-' }}
                         </h5>
                         <small class="text-muted text-uppercase">Best Finish</small>
                     </div>
@@ -194,7 +194,7 @@
                                 {{ $entry->tournament->start_date->format('d M Y') }}
                             </td>
                             <td class="align-middle font-weight-bold text-primary">
-                                {{ $entry->rank ? Number::ordinal($entry->rank) : '-' }}
+                                {{ $entry->rank ? \App\Helpers\NumberHelper::ordinal($entry->rank) : '-' }}
                             </td>
                             <td class="align-middle">
                                 <a href="{{ route('tournaments.detail', $entry->tournament_id) }}" class="text-dark font-weight-bold text-decoration-none">

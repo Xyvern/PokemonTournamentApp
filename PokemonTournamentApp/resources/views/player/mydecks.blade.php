@@ -40,7 +40,7 @@
     }
 </style>
 
-<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+<div class="responsive-container">
     
     {{-- 1. PAGE HEADER & ACTIONS --}}
     <div class="row mb-4">

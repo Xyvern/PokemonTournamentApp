@@ -51,7 +51,7 @@
     }
 </style>
 
-<div style="margin-left: 10vw; margin-top: 2vh; margin-right: 10vw;">
+<div class="responsive-container">
     
     {{-- Back Button --}}
     <div class="mb-4">
@@ -110,7 +110,7 @@
 
                         {{-- Place --}}
                         <td class="place-cell">
-                            {{ $entry->rank ? Number::ordinal($entry->rank) : '-' }}
+                             {{ $entry->rank ? \App\Helpers\NumberHelper::ordinal($entry->rank) : '-' }}
                         </td>
 
                         {{-- Tournament Name --}}

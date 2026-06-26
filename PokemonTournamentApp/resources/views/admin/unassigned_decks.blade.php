@@ -3,7 +3,7 @@
 @section('title', 'Assign Archetypes')
 
 @section('content')
-<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+<div class="responsive-container">
     
     {{-- 1. PAGE HEADER --}}
     <div class="row mb-4">

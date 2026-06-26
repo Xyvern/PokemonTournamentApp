@@ -57,7 +57,7 @@
 .ace-spec-item { border-left: 5px solid #d63384 !important; background: #fff0f6 !important; }
 </style>
 
-<div class="main-wrapper" style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+<div class="main-wrapper responsive-container">
     <div class="card-list-panel">
         <div class="panel-header">
             <h4 class="mb-3">Card Database</h4>

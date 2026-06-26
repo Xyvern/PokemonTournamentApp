@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="{{ asset('unity-game/TemplateData/style.css') }}">
 
 {{-- Added the requested margin wrapper --}}
-<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+<div class="responsive-container">
     <div class="row mb-4">
         {{-- Left Column: Unity WebGL Game --}}
         <div class="col-md-9">

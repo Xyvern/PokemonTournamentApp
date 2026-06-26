@@ -11,6 +11,33 @@
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+
+    <style>
+        .responsive-container {
+            margin-left: 10vw;
+            margin-right: 10vw;
+            margin-top: 1.5vh;
+            transition: margin-left 0.2s ease, margin-right 0.2s ease;
+        }
+        @media (max-width: 1440px) {
+            .responsive-container {
+                margin-left: 6vw;
+                margin-right: 6vw;
+            }
+        }
+        @media (max-width: 1200px) {
+            .responsive-container {
+                margin-left: 4vw;
+                margin-right: 4vw;
+            }
+        }
+        @media (max-width: 992px) {
+            .responsive-container {
+                margin-left: 3vw;
+                margin-right: 3vw;
+            }
+        }
+    </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100">

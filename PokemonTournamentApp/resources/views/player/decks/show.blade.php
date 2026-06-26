@@ -70,7 +70,7 @@
     });
 @endphp
 
-<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+<div class="responsive-container">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="text-dark font-weight-bold mb-0">{{ $deck->name }}</h3>
         <button onclick="copyDeckAndRedirect('{{ $deck->globalDeck->deck_hash }}', '{{ route('player.createDeck', ['copy' => $deck->globalDeck->deck_hash]) }}')" class="btn btn-primary font-weight-bold px-4 shadow-sm">
@@ -100,7 +100,7 @@
                 @foreach ($deck->tournamentEntries->whereNotNull('rank') as $entry)
                     @if ($entry->tournament->status == "completed")   
                         <li>
-                            {{ Number::ordinal($entry->rank) }} Place {{ $entry->tournament->name }}, {{ $entry->user->nickname }}
+                            {{ \App\Helpers\NumberHelper::ordinal($entry->rank) }} Place {{ $entry->tournament->name }}, {{ $entry->user->nickname }}
                         </li>
                     @endif
                 @endforeach

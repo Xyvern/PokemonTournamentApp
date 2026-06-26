@@ -3,7 +3,7 @@
 @section('title', 'Create Tournament')
 
 @section('content')
-<div style="margin-left: 10vw; margin-top: 2vh; margin-right: 10vw;">
+<div class="responsive-container">
     
     <div class="row mb-4 align-items-center">
         <div class="col-12">

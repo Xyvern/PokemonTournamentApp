@@ -47,7 +47,7 @@
     }
 </style>
 
-<div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+<div class="responsive-container">
     
     {{-- 1. HEADER SECTION --}}
     <div class="text-center mb-5">
@@ -95,7 +95,7 @@
 
                         {{-- Place --}}
                         <td class="place-cell">
-                            {{ Number::ordinal($entry->rank ?? 0) }}
+                            {{ \App\Helpers\NumberHelper::ordinal($entry->rank ?? 0) }}
                         </td>
 
                         {{-- Tournament Name --}}

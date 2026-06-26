@@ -6,13 +6,34 @@
 
 {{-- 1. STYLES --}}
 <style>
-    /* Page Container */
     .card-page-wrapper {
-        margin: 5vh 10vw;
+        margin-top: 5vh;
+        margin-bottom: 5vh;
+        margin-left: 10vw;
+        margin-right: 10vw;
         display: flex;
         flex-direction: column;
         align-items: center;
         font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        transition: margin-left 0.2s ease, margin-right 0.2s ease;
+    }
+    @media (max-width: 1440px) {
+        .card-page-wrapper {
+            margin-left: 6vw;
+            margin-right: 6vw;
+        }
+    }
+    @media (max-width: 1200px) {
+        .card-page-wrapper {
+            margin-left: 4vw;
+            margin-right: 4vw;
+        }
+    }
+    @media (max-width: 992px) {
+        .card-page-wrapper {
+            margin-left: 3vw;
+            margin-right: 3vw;
+        }
     }
 
     /* MAIN TITLE */

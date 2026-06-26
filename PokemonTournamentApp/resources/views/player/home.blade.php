@@ -15,7 +15,7 @@
         }
     </style>
 
-    <div style="margin-left: 10vw; margin-top: 1vh; margin-right: 10vw;">
+    <div class="responsive-container">
         <h2 style="margin-top: 2vh; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">Your current Session</h2>
         @if (!empty($currentTournaments))
             <div class="row" style="margin-top: 2vh;">    
@@ -109,10 +109,10 @@
 
         <div class="row" style="margin-top: 2vh;">
             @foreach ($archetypes as $archetype)
-                <div class="col-lg-3 col-6">
-                    <a href="{{ route('archetypes.detail', ['id' => $archetype->id]) }}" style="text-decoration: none; color: inherit;">
+                <div class="col-xl-3 col-lg-4 col-md-6 col-12 mb-3">
+                    <a href="{{ route('archetypes.detail', ['id' => $archetype->id]) }}" style="text-decoration: none; color: inherit;" class="h-100 d-block">
                         {{-- ADDED: hover-lift class --}}
-                        <div class="info-box shadow-sm mb-3 align-items-center hover-lift" style="min-height: 100px;">
+                        <div class="info-box shadow-sm mb-3 align-items-center hover-lift h-100 overflow-hidden" style="min-height: 100px;">
                             <div class="bg-light elevation-1 d-flex justify-content-center align-items-center rounded-left overflow-hidden" 
                                 style="width: 144px; height: 200px; flex-shrink: 0;">
                                 <img src="{{ $archetype->keyCard->images->small }}" 

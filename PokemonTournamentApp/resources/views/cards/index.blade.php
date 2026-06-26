@@ -23,7 +23,7 @@
     }
 </style>
 
-<div style="margin-left: 10vw; margin-top: 2vh; margin-right: 10vw;">
+<div class="responsive-container">
 
     {{-- 1. Page Header & Search Bar --}}
     <div class="row mb-4 align-items-center">
