@@ -115,7 +115,7 @@ class AdminSiteController extends Controller
             ->take(3)
             ->get();
 
-        $upcomingTournaments = Tournament::whereIn('status', ['registration', 'active'])
+        $upcomingTournaments = Tournament::where('status', 'registration')
             ->orderBy('start_date', 'asc')
             ->take(3)
             ->get();
