@@ -73,9 +73,11 @@
 <div class="responsive-container">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="text-dark font-weight-bold mb-0">{{ $deck->name }}</h3>
+        @auth
         <button onclick="copyDeckAndRedirect('{{ $deck->globalDeck->deck_hash }}', '{{ route('player.createDeck', ['copy' => $deck->globalDeck->deck_hash]) }}')" class="btn btn-primary font-weight-bold px-4 shadow-sm">
             <i class="fas fa-copy mr-2"></i> Copy Deck
         </button>
+        @endauth
     </div>
 
     <div class="p-4 rounded shadow-sm" style="background-color: #2b2b2b;">

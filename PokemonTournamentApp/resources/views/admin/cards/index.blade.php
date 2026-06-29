@@ -28,35 +28,16 @@
     {{-- 1. Header & API Sync Panel --}}
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
-            <div class="row align-items-center">
+            <div class="row align-items-center mb-3">
                 
                 {{-- Left: Titles --}}
-                <div class="col-md-4 mb-3 mb-md-0">
+                <div class="col-md-6 mb-3 mb-md-0">
                     <h2 class="mb-1 font-weight-bold">Card Database</h2>
                     <p class="text-muted mb-0">Manage and sync cards from the official Pokémon TCG API.</p>
                 </div>
 
-                {{-- Middle: NEW Search Bar --}}
-                <div class="col-md-4 mb-3 mb-md-0">
-                    <form action="{{ url()->current() }}" method="GET" class="m-0">
-                        <div class="input-group shadow-sm">
-                            <input type="text" name="search" class="form-control border-light" placeholder="Search for a Pokémon..." value="{{ request('search') }}">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                                @if(request('search'))
-                                    <a href="{{ url()->current() }}" class="btn btn-outline-secondary" title="Clear Search">
-                                        <i class="fas fa-times"></i>
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
                 {{-- Right: Sync & Info --}}
-                <div class="col-md-4 d-flex align-items-center justify-content-md-end">
+                <div class="col-md-6 d-flex align-items-center justify-content-md-end">
                     {{-- Latest Set Info --}}
                     <div class="alert alert-light border mb-0 mr-3 d-inline-block text-left shadow-sm py-1 px-2">
                         <small class="text-muted text-uppercase font-weight-bold d-block" style="font-size: 0.65rem;">Latest Set</small>
@@ -68,15 +49,49 @@
                     </div>
                     
                     {{-- The Sync Button --}}
-                    <form action="{{ route('admin.cards.sync') }}" method="POST" class="m-0">
+                    <form action="{{ route('admin.cards.sync') }}" method="POST" class="m-0" id="syncForm">
                         @csrf
-                        <button type="submit" class="btn btn-dark shadow-sm font-weight-bold" onclick="return confirm('This will pull all new sets and cards from the API. This may take a minute. Continue?')">
+                        <button type="button" class="btn btn-dark shadow-sm font-weight-bold" onclick="startSync()">
                             <i class="fas fa-sync-alt"></i> <span class="d-none d-lg-inline ml-1">Pull New</span>
                         </button>
                     </form>
                 </div>
 
             </div>
+
+            {{-- Bottom: Filters --}}
+            <form action="{{ url()->current() }}" method="GET" class="m-0">
+                <div class="row">
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <input type="text" name="search" class="form-control shadow-sm" placeholder="Search for a Pokémon..." value="{{ request('search') }}">
+                    </div>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <select name="supertype" class="form-control shadow-sm">
+                            <option value="">All Card Types</option>
+                            <option value="Pokémon" {{ request('supertype') == 'Pokémon' ? 'selected' : '' }}>Pokémon</option>
+                            <option value="Trainer" {{ request('supertype') == 'Trainer' ? 'selected' : '' }}>Trainer</option>
+                            <option value="Energy" {{ request('supertype') == 'Energy' ? 'selected' : '' }}>Energy</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <select name="sort_cards" class="form-control shadow-sm">
+                            <option value="number_asc" {{ request('sort_cards') == 'number_asc' ? 'selected' : '' }}>Sort Cards: Number</option>
+                            <option value="name_asc" {{ request('sort_cards') == 'name_asc' ? 'selected' : '' }}>Sort Cards: A-Z</option>
+                            <option value="name_desc" {{ request('sort_cards') == 'name_desc' ? 'selected' : '' }}>Sort Cards: Z-A</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex">
+                        <button class="btn btn-primary shadow-sm flex-grow-1" type="submit">
+                            <i class="fas fa-search"></i> Apply
+                        </button>
+                        @if(request('search') || request('supertype') || request('sort_cards'))
+                            <a href="{{ url()->current() }}" class="btn btn-outline-secondary shadow-sm ml-2" title="Clear Filters">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -148,4 +163,33 @@
     </div>
 
 </div>
+@push('scripts')
+<script>
+    function startSync() {
+        Swal.fire({
+            title: 'Pull New Cards?',
+            text: 'This will pull all new sets and cards from the API. This may take a minute. Continue?',
+            icon: 'question',
+            allowOutsideClick: false,
+            showCancelButton: true,
+            confirmButtonText: 'Start Sync',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Syncing in progress...',
+                    text: 'Please do not close or refresh this page.',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                        document.getElementById('syncForm').submit();
+                    }
+                });
+            }
+        });
+    }
+</script>
+@endpush
+
 @endsection

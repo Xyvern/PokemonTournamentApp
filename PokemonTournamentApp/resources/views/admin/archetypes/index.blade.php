@@ -4,8 +4,24 @@
 
 @section('content')
 
+{{-- Select2 CSS --}}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 {{-- CSS for the Hover Animation --}}
 <style>
+    .select2-container .select2-selection--single {
+        height: 38px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: normal !important;
+        display: flex;
+        align-items: center;
+        height: 100%;
+        padding-left: 8px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px !important;
+    }
     .hover-lift {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         position: relative;
@@ -147,8 +163,13 @@
                                     </div>
                                     <div class="form-group">
                                         <label class="font-weight-bold">Key Card API ID</label>
-                                        <input type="text" name="api_id" class="form-control" value="{{ $archetype->keyCard->api_id ?? '' }}" placeholder="e.g., sv6-130">
-                                        <small class="form-text text-muted">Find this in the Card Database page.</small>
+                                        <select name="api_id" class="form-control select2-cards" style="width: 100%;">
+                                            <option value=""></option>
+                                            @if(isset($archetype->keyCard))
+                                                <option value="{{ $archetype->keyCard->api_id }}" selected>{{ $archetype->keyCard->name }} ({{ $archetype->keyCard->api_id }})</option>
+                                            @endif
+                                        </select>
+                                        <small class="form-text text-muted">Search by card name or API ID.</small>
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-light">
@@ -199,8 +220,10 @@
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold">Key Card API ID (Optional)</label>
-                        <input type="text" name="api_id" class="form-control" placeholder="e.g., sv6-130">
-                        <small class="form-text text-muted">This sets the display image. You can assign this later.</small>
+                        <select name="api_id" class="form-control select2-cards" style="width: 100%;">
+                            <option value=""></option>
+                        </select>
+                        <small class="form-text text-muted">This sets the display image. You can search by card name or API ID.</small>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -211,5 +234,67 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    function formatCard(card) {
+        if (!card.id) {
+            return card.text;
+        }
+        var imgSrc = 'https://images.pokemontcg.io/' + card.id.replace('-', '/') + '.png';
+        var $container = $(
+            '<div class="d-flex align-items-center">' +
+            '<img src="' + imgSrc + '" style="width: 45px; height: auto; margin-right: 12px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" />' +
+            '<span class="font-weight-bold">' + card.text + '</span>' +
+            '</div>'
+        );
+        return $container;
+    }
+
+    function formatCardSelection(card) {
+        if (!card.id) {
+            return card.text;
+        }
+        var imgSrc = 'https://images.pokemontcg.io/' + card.id.replace('-', '/') + '.png';
+        var $container = $(
+            '<div class="d-flex align-items-center">' +
+            '<img src="' + imgSrc + '" style="width: 20px; height: auto; margin-right: 8px; border-radius: 2px;" />' +
+            '<span>' + card.text + '</span>' +
+            '</div>'
+        );
+        return $container;
+    }
+
+    $(document).ready(function() {
+        $('.select2-cards').each(function() {
+            $(this).select2({
+                dropdownParent: $(this).closest('.modal'),
+                placeholder: 'Search for a card...',
+                allowClear: true,
+                templateResult: formatCard,
+                templateSelection: formatCardSelection,
+                ajax: {
+                    url: '{{ route('admin.cards.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term // search term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.results
+                        };
+                    },
+                    cache: true
+                },
+                minimumInputLength: 3,
+            });
+        });
+    });
+</script>
+@endpush
 
 @endsection

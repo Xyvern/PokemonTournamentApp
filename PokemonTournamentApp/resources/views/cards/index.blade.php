@@ -25,25 +25,41 @@
 
 <div class="responsive-container">
 
-    {{-- 1. Page Header & Search Bar --}}
     <div class="row mb-4 align-items-center">
         {{-- Left: Titles --}}
-        <div class="col-md-6 mb-3 mb-md-0">
+        <div class="col-md-12 mb-3">
             <h2 class="mb-1 font-weight-bold">Cards Collection</h2>
             <p class="text-muted mb-0">Browse through the latest Pokémon TCG expansions.</p>
         </div>
 
-        {{-- Right: Search Bar --}}
-        <div class="col-md-6">
+        {{-- Filters --}}
+        <div class="col-md-12">
             <form action="{{ url()->current() }}" method="GET" class="m-0">
-                <div class="input-group shadow-sm">
-                    <input type="text" name="search" class="form-control border-light" placeholder="Search for a Pokémon..." value="{{ request('search') }}">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-search"></i>
+                <div class="row">
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <input type="text" name="search" class="form-control shadow-sm" placeholder="Search for a Pokémon..." value="{{ request('search') }}">
+                    </div>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <select name="supertype" class="form-control shadow-sm">
+                            <option value="">All Card Types</option>
+                            <option value="Pokémon" {{ request('supertype') == 'Pokémon' ? 'selected' : '' }}>Pokémon</option>
+                            <option value="Trainer" {{ request('supertype') == 'Trainer' ? 'selected' : '' }}>Trainer</option>
+                            <option value="Energy" {{ request('supertype') == 'Energy' ? 'selected' : '' }}>Energy</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <select name="sort_cards" class="form-control shadow-sm">
+                            <option value="number_asc" {{ request('sort_cards') == 'number_asc' ? 'selected' : '' }}>Sort Cards: Number</option>
+                            <option value="name_asc" {{ request('sort_cards') == 'name_asc' ? 'selected' : '' }}>Sort Cards: A-Z</option>
+                            <option value="name_desc" {{ request('sort_cards') == 'name_desc' ? 'selected' : '' }}>Sort Cards: Z-A</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex">
+                        <button class="btn btn-primary shadow-sm flex-grow-1" type="submit">
+                            <i class="fas fa-search"></i> Apply
                         </button>
-                        @if(request('search'))
-                            <a href="{{ url()->current() }}" class="btn btn-outline-secondary" title="Clear Search">
+                        @if(request('search') || request('supertype') || request('sort_cards'))
+                            <a href="{{ url()->current() }}" class="btn btn-outline-secondary shadow-sm ml-2" title="Clear Filters">
                                 <i class="fas fa-times"></i>
                             </a>
                         @endif

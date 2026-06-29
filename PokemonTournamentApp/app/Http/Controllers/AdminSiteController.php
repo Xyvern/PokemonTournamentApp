@@ -211,31 +211,53 @@ class AdminSiteController extends Controller
     public function cardDatabase(Request $request)
     {
         $latestSet = Set::orderBy('release_date', 'desc')->first();
+        
+        $search = $request->input('search');
+        $supertype = $request->input('supertype');
+        $sortCards = $request->input('sort_cards', 'number_asc');
 
         $setsQuery = Set::query();
 
-        if ($request->filled('search')) {
-            $searchTerm = $request->search;
-            
-            $setsQuery->whereHas('cards', function($q) use ($searchTerm) {
-                $q->where('name', 'LIKE', '%' . $searchTerm . '%');
+        if ($search || $supertype) {
+            $setsQuery->whereHas('cards', function($q) use ($search, $supertype) {
+                if ($search) {
+                    $q->where('name', 'LIKE', '%' . $search . '%');
+                }
+                if ($supertype) {
+                    $q->where('supertype', $supertype);
+                }
             });
 
-            $setsQuery->with(['cards' => function($q) use ($searchTerm) {
-                $q->where('name', 'LIKE', '%' . $searchTerm . '%')
-                  ->orderByRaw('CAST(number AS UNSIGNED) ASC');
+            $setsQuery->with(['cards' => function($q) use ($search, $supertype, $sortCards) {
+                if ($search) {
+                    $q->where('name', 'LIKE', '%' . $search . '%');
+                }
+                if ($supertype) {
+                    $q->where('supertype', $supertype);
+                }
+                if ($sortCards == 'name_asc') {
+                    $q->orderBy('name', 'asc');
+                } elseif ($sortCards == 'name_desc') {
+                    $q->orderBy('name', 'desc');
+                } else {
+                    $q->orderByRaw('CAST(number AS UNSIGNED) ASC');
+                }
             }]);
         } else {
-            $setsQuery->with(['cards' => function ($query) {
-                $query->orderByRaw('CAST(number AS UNSIGNED) ASC'); 
+            $setsQuery->with(['cards' => function ($q) use ($sortCards) {
+                if ($sortCards == 'name_asc') {
+                    $q->orderBy('name', 'asc');
+                } elseif ($sortCards == 'name_desc') {
+                    $q->orderBy('name', 'desc');
+                } else {
+                    $q->orderByRaw('CAST(number AS UNSIGNED) ASC');
+                }
             }]);
         }
 
         $sets = $setsQuery->orderBy('release_date', 'desc')->paginate(2);
 
-        if ($request->filled('search')) {
-            $sets->appends(['search' => $request->search]);
-        }
+        $sets->appends($request->query());
 
         return view('admin.cards.index', compact('latestSet', 'sets'));
     }
@@ -350,12 +372,32 @@ class AdminSiteController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function managePlayers()
+    public function managePlayers(Request $request)
     {
-        $players = User::where('role', 1)
-            ->withTrashed()
-            ->orderBy('elo', 'desc')
-            ->paginate(40);
+        $search = $request->input('search');
+        $sort = $request->input('sort', 'elo_desc');
+
+        $query = User::where('role', 1)->withTrashed();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nickname', 'LIKE', '%' . $search . '%')
+                  ->orWhere('username', 'LIKE', '%' . $search . '%');
+            });
+        }
+
+        if ($sort === 'name_asc') {
+            $query->orderBy('nickname', 'asc');
+        } elseif ($sort === 'name_desc') {
+            $query->orderBy('nickname', 'desc');
+        } elseif ($sort === 'winrate_desc') {
+            $query->orderByRaw('CASE WHEN matches_played = 0 THEN 0 ELSE (matches_won / matches_played) END DESC');
+        } else {
+            $query->orderBy('elo', 'desc');
+        }
+
+        $players = $query->paginate(40);
+        $players->appends($request->query());
 
         return view('admin.players.index', compact('players'));
     }
@@ -462,5 +504,37 @@ class AdminSiteController extends Controller
         }
 
         return view('admin.tournaments.edit', compact('tournament'));
+    }
+
+    /**
+     * AJAX endpoint for searching cards for Select2
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function searchCards(Request $request)
+    {
+        $search = $request->get('q');
+        
+        $query = Card::query();
+        if ($search) {
+            $query->where('name', 'LIKE', '%' . $search . '%')
+                  ->orWhere('api_id', 'LIKE', '%' . $search . '%');
+        }
+        
+        // Select only necessary fields to keep payload small
+        $cards = $query->select('api_id', 'name')->orderBy('name', 'asc')->take(50)->get();
+        
+        $results = [];
+        foreach ($cards as $card) {
+            $results[] = [
+                'id' => $card->api_id,
+                'text' => $card->name . ' (' . $card->api_id . ')'
+            ];
+        }
+        
+        return response()->json([
+            'results' => $results
+        ]);
     }
 }

@@ -153,6 +153,7 @@ Route::middleware(['auth', IsAdmin::class])->prefix('admin')->name('admin.')->gr
 
     Route::prefix('cards')->name('cards.')->group(function () {
         Route::get('/', [AdminSiteController::class, 'cardDatabase'])->name('index');
+        Route::get('/search', [AdminSiteController::class, 'searchCards'])->name('search');
         Route::get('/{id}', [AdminSiteController::class, 'cardDetail'])->name('detail');
         Route::post('/sync', [AdminController::class, 'syncCards'])->name('sync');
         Route::post('/{id}/toggle-playable', [AdminController::class, 'togglePlayable'])->name('togglePlayable');

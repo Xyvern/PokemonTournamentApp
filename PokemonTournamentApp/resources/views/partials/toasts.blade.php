@@ -1,47 +1,49 @@
 {{-- GLOBAL TOAST NOTIFICATIONS --}}
 <script>
     $(document).ready(function() {
-        
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
         // 1. Handle Success Messages
         @if(session('success'))
-            $(document).Toasts('create', {
-                class: 'bg-success',
-                title: 'Success',
-                icon: 'fas fa-check-circle fa-lg',
-                autohide: true,
-                delay: 4000, // Disappears after 4 seconds
-                body: '{{ session('success') }}'
+            Toast.fire({
+                icon: 'success',
+                title: '{{ session('success') }}'
             });
         @endif
 
         // 2. Handle Validation Errors
         @if($errors->any())
-            // Combine all errors into one clean list for the toast body
-            let errorHtml = '<ul class="mb-0 pl-3">';
+            let errorHtml = '<ul class="mb-0 pl-3 text-left">';
             @foreach($errors->all() as $error)
                 errorHtml += '<li>{{ $error }}</li>';
             @endforeach
             errorHtml += '</ul>';
 
-            $(document).Toasts('create', {
-                class: 'bg-danger',
+            Swal.fire({
+                icon: 'error',
                 title: 'Validation Error',
-                icon: 'fas fa-exclamation-circle fa-lg',
-                autohide: true,
-                delay: 6000, // Errors stay a bit longer so users can read them
-                body: errorHtml
+                html: errorHtml,
+                confirmButtonColor: '#3085d6'
             });
         @endif
         
         // 3. Handle General Error Messages (e.g., Kickbacks from Middleware)
         @if(session('error'))
-            $(document).Toasts('create', {
-                class: 'bg-danger',
+            Swal.fire({
+                icon: 'error',
                 title: 'Error',
-                icon: 'fas fa-times-circle fa-lg',
-                autohide: true,
-                delay: 5000,
-                body: '{{ session('error') }}'
+                text: '{{ session('error') }}',
+                confirmButtonColor: '#3085d6'
             });
         @endif
         

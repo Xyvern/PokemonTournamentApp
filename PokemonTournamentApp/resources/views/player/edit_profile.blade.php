@@ -24,13 +24,13 @@
                 {{-- Password Field --}}
                 <div class="form-group mb-3">
                     <label for="password" class="font-weight-bold">New Password</label>
-                    <input type="password" name="password" id="password" class="form-control" placeholder="Enter new password">
+                    <input type="password" name="password" id="password" class="form-control" placeholder="Enter new password" autocomplete="new-password">
                 </div>
 
                 {{-- Password Confirmation Field --}}
                 <div class="form-group mb-4">
                     <label for="password_confirmation" class="font-weight-bold">Confirm New Password</label>
-                    <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="Re-type new password">
+                    <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" placeholder="Re-type new password" autocomplete="new-password">
                 </div>
 
                 {{-- Submit Buttons --}}

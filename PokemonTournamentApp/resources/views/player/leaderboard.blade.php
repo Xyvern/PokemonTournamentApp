@@ -38,14 +38,14 @@
             <div class="card shadow-sm border-0">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover table-striped mb-0 text-center">
+                        <table class="table table-hover mb-0 text-center" style="vertical-align: middle;">
                             <thead class="bg-light">
                                 <tr>
-                                    <th scope="col" class="border-top-0 py-3" style="width: 10%;">Rank</th>
-                                    <th scope="col" class="border-top-0 py-3 text-left pl-5" style="width: 30%;">Nickname</th>
-                                    <th scope="col" class="border-top-0 py-3" style="width: 20%;">Elo Rating</th>
-                                    <th scope="col" class="border-top-0 py-3" style="width: 20%;">Win Rate</th>
-                                    <th scope="col" class="border-top-0 py-3" style="width: 20%;">Matches</th>
+                                    <th scope="col" class="border-top-0 py-3 text-uppercase text-muted" style="width: 15%; font-size: 0.85rem; letter-spacing: 0.5px;">Rank</th>
+                                    <th scope="col" class="border-top-0 py-3 text-left pl-4 text-uppercase text-muted" style="width: 40%; font-size: 0.85rem; letter-spacing: 0.5px;">Player</th>
+                                    <th scope="col" class="border-top-0 py-3 text-uppercase text-muted" style="width: 15%; font-size: 0.85rem; letter-spacing: 0.5px;">Elo Rating</th>
+                                    <th scope="col" class="border-top-0 py-3 text-uppercase text-muted" style="width: 15%; font-size: 0.85rem; letter-spacing: 0.5px;">Win Rate</th>
+                                    <th scope="col" class="border-top-0 py-3 text-uppercase text-muted" style="width: 15%; font-size: 0.85rem; letter-spacing: 0.5px;">Matches</th>
                                 </tr>
                             </thead>
                             {{-- ID target for AJAX --}}

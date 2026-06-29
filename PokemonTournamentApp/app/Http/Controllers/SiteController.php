@@ -19,36 +19,52 @@ class SiteController extends Controller
     public function cards(Request $request)
     {
         $search = $request->input('search');
+        $supertype = $request->input('supertype');
+        $sortCards = $request->input('sort_cards', 'number_asc');
 
-        // 1. Start the query for Sets
         $query = Set::query();
 
-        // 2. If the user searched for something, apply the filters
-        if ($search) {
-            // Only fetch Sets that ACTUALLY CONTAIN a card matching the search
-            $query->whereHas('cards', function ($q) use ($search) {
-                $q->where('name', 'LIKE', '%' . $search . '%');
+        if ($search || $supertype) {
+            $query->whereHas('cards', function ($q) use ($search, $supertype) {
+                if ($search) {
+                    $q->where('name', 'LIKE', '%' . $search . '%');
+                }
+                if ($supertype) {
+                    $q->where('supertype', $supertype);
+                }
             });
 
-            // Eager-load ONLY the matching cards within those Sets
-            $query->with(['cards' => function ($q) use ($search) {
-                $q->where('name', 'LIKE', '%' . $search . '%')
-                ->orderByRaw('CAST(number AS UNSIGNED) ASC');
+            $query->with(['cards' => function ($q) use ($search, $supertype, $sortCards) {
+                if ($search) {
+                    $q->where('name', 'LIKE', '%' . $search . '%');
+                }
+                if ($supertype) {
+                    $q->where('supertype', $supertype);
+                }
+                if ($sortCards == 'name_asc') {
+                    $q->orderBy('name', 'asc');
+                } elseif ($sortCards == 'name_desc') {
+                    $q->orderBy('name', 'desc');
+                } else {
+                    $q->orderByRaw('CAST(number AS UNSIGNED) ASC');
+                }
             }]);
         } else {
-            // No search? Just load all cards normally
-            $query->with(['cards' => function ($q) {
-                $q->orderByRaw('CAST(number AS UNSIGNED) ASC');
+            $query->with(['cards' => function ($q) use ($sortCards) {
+                if ($sortCards == 'name_asc') {
+                    $q->orderBy('name', 'asc');
+                } elseif ($sortCards == 'name_desc') {
+                    $q->orderBy('name', 'desc');
+                } else {
+                    $q->orderByRaw('CAST(number AS UNSIGNED) ASC');
+                }
             }]);
         }
 
-        // 3. Paginate the Sets (2 per page)
         $sets = $query->orderBy('release_date', 'desc')->paginate(2);
 
-        // 4. CRITICAL: Tell Laravel's paginator to remember the search term on Page 2, Page 3, etc.
-        if ($search) {
-            $sets->appends(['search' => $search]);
-        }
+        // Remember query parameters for pagination
+        $sets->appends($request->query());
 
         return view('cards.index', compact('sets')); // Adjust view path if needed
     }

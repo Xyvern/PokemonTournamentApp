@@ -50,11 +50,27 @@
                             <p class="text-muted mb-0">View stats and manage account access for all registered competitors.</p>
                         </div>
                         
-                        {{-- Optional: You can add a search bar or filter buttons here later, just like the tournaments page! --}}
-                        <div class="col-md-6 text-md-right mt-3 mt-md-0">
-                            <div class="badge badge-light border px-3 py-2 text-muted shadow-sm">
-                                <i class="fas fa-users mr-1"></i> Total Players: {{ $players->total() }}
-                            </div>
+                        <div class="col-md-6 text-md-right mt-3 mt-md-0 d-flex justify-content-md-end align-items-center">
+                            <form action="{{ url()->current() }}" method="GET" class="m-0 d-flex w-100 justify-content-md-end">
+                                <input type="text" name="search" class="form-control form-control-sm shadow-sm mr-2" style="max-width: 200px;" placeholder="Search name..." value="{{ request('search') }}">
+                                <select name="sort" class="form-control form-control-sm shadow-sm mr-2" style="max-width: 150px;">
+                                    <option value="elo_desc" {{ request('sort') == 'elo_desc' ? 'selected' : '' }}>Sort: ELO</option>
+                                    <option value="winrate_desc" {{ request('sort') == 'winrate_desc' ? 'selected' : '' }}>Sort: Win Rate</option>
+                                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Sort: A-Z</option>
+                                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Sort: Z-A</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary shadow-sm mr-2">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                @if(request('search') || request('sort'))
+                                    <a href="{{ url()->current() }}" class="btn btn-sm btn-outline-secondary shadow-sm mr-3" title="Clear Filters">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                @endif
+                                <div class="badge badge-light border px-3 py-2 text-muted shadow-sm d-none d-lg-inline-block">
+                                    <i class="fas fa-users mr-1"></i> {{ $players->total() }}
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
