@@ -44,6 +44,9 @@ class PlayerController extends Controller
             // Skip if the card ID sent doesn't exist in our DB
             if (!isset($cardLookup[$dbId])) continue;
             
+            // Skip null entries from sparse JSON arrays
+            if (empty($data) || !isset($data['qty'])) continue;
+            
             $qty = (int) $data['qty'];
             if ($qty <= 0) continue;
             

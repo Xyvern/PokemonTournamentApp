@@ -239,7 +239,11 @@ class PlayerSiteController extends Controller
             }
         }
 
-        return view('player.decks.create', compact('cards', 'prefilledDeck', 'deckName'));
+        return view('player.decks.create', [
+            'cards' => $cards,
+            'prefilledDeck' => (object) $prefilledDeck,
+            'deckName' => $deckName
+        ]);
     }
 
     public function playerSets()
