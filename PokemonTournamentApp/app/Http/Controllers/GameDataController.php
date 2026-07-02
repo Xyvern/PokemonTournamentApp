@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TournamentMatch;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class GameDataController extends Controller
 {
@@ -83,5 +84,32 @@ class GameDataController extends Controller
             'status' => 'error',
             'message' => 'Match data storage failed'
         ], 400);
+    }
+
+    public function photonWebhook(Request $request)
+    {
+        $type = $request->input('Type');
+        $userId = $request->input('UserId');
+        
+        $connectedUsers = Cache::get('photon_connected_users', []);
+
+        if ($type === 'Join') {
+            // Track the user ID if provided
+            if ($userId && !in_array($userId, $connectedUsers)) {
+                $connectedUsers[] = $userId;
+            }
+        } elseif ($type === 'Leave') {
+            if ($userId) {
+                $connectedUsers = array_values(array_diff($connectedUsers, [$userId]));
+            }
+        }
+
+        Cache::put('photon_connected_users', $connectedUsers);
+        Cache::put('photon_current_ccu', count($connectedUsers));
+
+        return response()->json([
+            'ResultCode' => 0,
+            'Message' => 'Success'
+        ]);
     }
 }

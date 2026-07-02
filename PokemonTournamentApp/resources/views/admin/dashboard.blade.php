@@ -262,6 +262,54 @@
         </div>
 
     </div>
+    
+    {{-- NEW: PHOTON SERVER REPORT --}}
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="h4 font-weight-bold" style="margin-top: 2vh; border-bottom: 2px solid #6f42c1; padding-bottom: 10px;">Photon Server Report (Webhooks)</h2>
+            <div class="card shadow-sm border-left-{{ $photonStats['status_color'] }} h-100" style="border-left: 4px solid var(--{{ $photonStats['status_color'] }});">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 border-right mb-3 mb-md-0 text-center">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #6f42c1;">Active Tournaments</div>
+                            <div class="h3 mb-0 font-weight-bold text-dark">{{ $allActiveTournaments->count() }}</div>
+                        </div>
+                        <div class="col-md-3 border-right mb-3 mb-md-0 text-center">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1 text-info">Required CCU (Min)</div>
+                            <div class="h3 mb-0 font-weight-bold text-dark" title="Active Round Matches x 2 Players">{{ $photonStats['required_ccu'] }}</div>
+                        </div>
+                        <div class="col-md-3 border-right mb-3 mb-md-0 text-center">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1 text-{{ $photonStats['status_color'] }}">Current / Max CCU</div>
+                            <div class="h3 mb-0 font-weight-bold text-dark">
+                                {{ $photonStats['current_ccu'] }} <span class="text-muted" style="font-size: 1.2rem;">/ {{ $photonStats['max_ccu'] }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1 text-secondary">Server Forecast</div>
+                            <div class="font-weight-bold text-{{ $photonStats['status_color'] }}">
+                                {{ $photonStats['forecast'] }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{-- Connected Users List --}}
+                    @if(!empty($connectedUsers) && count($connectedUsers) > 0)
+                        <hr class="mt-4 mb-3">
+                        <div class="text-xs font-weight-bold text-uppercase mb-2 text-muted">Currently Connected Players</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($connectedUsers as $user)
+                                <span class="badge badge-light border px-2 py-1 mr-2 mb-2" style="font-size: 0.9rem;">
+                                    <i class="fas fa-user-circle text-primary mr-1"></i> {{ $user->nickname }}
+                                    <span class="text-muted ml-1" style="font-size: 0.75rem;">(ELO: {{ $user->elo }})</span>
+                                </span>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- 5. ONGOING & UPCOMING TOURNAMENTS --}}
     <div class="row mb-5">
         {{-- Active Tournaments --}}
@@ -269,11 +317,11 @@
             {{-- CHANGED: Updated Title and Border Color to Primary Blue --}}
             <h2 class="h4 font-weight-bold" style="margin-top: 2vh; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Active Tournaments</h2>
             
-            @if ($activeTournaments->isEmpty())
+            @if ($activeTournamentsView->isEmpty())
                 <div class="alert alert-light border" style="margin-top: 2vh;">No active tournaments found.</div>
             @else
                 <div class="d-flex flex-column gap-3" style="margin-top: 2vh;">
-                    @foreach ($activeTournaments as $item)
+                    @foreach ($activeTournamentsView as $item)
                         <a href="{{ route('admin.tournaments.detail', ['id' => $item->id]) }}" style="text-decoration: none; color: inherit;">
                             <div class="info-box shadow-sm mb-3 hover-lift" style="border-radius: 8px; transition: transform 0.2s;">
                                 {{-- CHANGED: Replaced bg-secondary with bg-primary and made text white --}}

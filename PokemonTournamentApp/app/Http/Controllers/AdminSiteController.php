@@ -110,10 +110,40 @@ class AdminSiteController extends Controller
         // 4. Finally, grab the top 15 of whatever was sorted
         $playerReports = $query->take(15)->get();
 
-        $activeTournaments = Tournament::where('status', 'active')
+        // For the view display (limit to 3)
+        $activeTournamentsView = Tournament::where('status', 'active')
             ->orderBy('start_date', 'asc')
             ->take(3)
             ->get();
+
+        // For CCU Calculation (all active)
+        $allActiveTournaments = Tournament::where('status', 'active')->get();
+        $requiredCcu = 0;
+        foreach ($allActiveTournaments as $tournament) {
+            $currentRound = \App\Models\TournamentMatch::where('tournament_id', $tournament->id)->max('round_number') ?? 1;
+            $activeMatches = \App\Models\TournamentMatch::where('tournament_id', $tournament->id)
+                ->where('round_number', $currentRound)
+                ->whereNull('result_code')
+                ->count();
+            $requiredCcu += ($activeMatches * 2);
+        }
+        
+        $currentCcu = \Illuminate\Support\Facades\Cache::get('photon_current_ccu', 0);
+        $maxCcu = 20; // Default Photon Free Tier Max
+        $photonStats = [
+            'required_ccu' => $requiredCcu,
+            'current_ccu'  => $currentCcu,
+            'max_ccu'      => $maxCcu,
+            'forecast'     => $requiredCcu >= $maxCcu ? 'Overload Risk: Required CCU exceeds max capacity.' : 'Stable: Capacity is sufficient.',
+            'status_color' => $requiredCcu >= $maxCcu ? 'danger' : ($requiredCcu >= $maxCcu * 0.8 ? 'warning' : 'success')
+        ];
+
+        // Fetch Connected Users from Cache
+        $connectedUserIds = \Illuminate\Support\Facades\Cache::get('photon_connected_users', []);
+        $connectedUsers = [];
+        if (!empty($connectedUserIds)) {
+            $connectedUsers = User::whereIn('id', $connectedUserIds)->get(['id', 'nickname', 'elo', 'role']);
+        }
 
         $upcomingTournaments = Tournament::where('status', 'registration')
             ->orderBy('start_date', 'asc')
@@ -126,7 +156,7 @@ class AdminSiteController extends Controller
             'winRateLabels', 'winRateData', 
             'attendanceLabels', 'attendanceData',
             'recentTransactions', 'playerReports',
-            'activeTournaments', 'upcomingTournaments' // Updated variable here!
+            'activeTournamentsView', 'upcomingTournaments', 'photonStats', 'allActiveTournaments', 'connectedUsers'
         ));
     }
 

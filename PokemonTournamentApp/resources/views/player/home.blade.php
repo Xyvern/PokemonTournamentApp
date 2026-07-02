@@ -172,6 +172,7 @@
                                     <div class="info-box-number text-muted" style="font-weight: 500; font-size: 0.9rem;">
                                         <p class="mb-1"><i class="fas fa-calendar-alt mr-1"></i> {{ $item->start_date instanceof \DateTime ? $item->start_date->format('d M Y') : $item->start_date }}</p>
                                         <p class="mb-0"><i class="fas fa-users mr-1"></i> {{ $item->registered_player }}/{{ $item->capacity }} players</p>
+                                        <p class="mb-0 mt-1 text-success font-weight-bold"><i class="fas fa-clock mr-1"></i> Running for: {{ \Carbon\Carbon::parse($item->start_date)->diffForHumans(null, true) }}</p>
                                     </div>
                                 </div>
                             </div>

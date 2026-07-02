@@ -28,7 +28,10 @@
                             @if($tournament->status === 'registration')
                                 <span class="badge badge-primary p-2" style="font-size: 1rem;">Registration Open</span>
                             @elseif($tournament->status === 'active')
-                                <span class="badge badge-success p-2" style="font-size: 1rem;">Live - Round {{ $currentRound ?? '?' }}</span>
+                                <div class="d-flex flex-column align-items-end">
+                                    <span class="badge badge-success p-2 mb-1" style="font-size: 1rem;">Live - Round {{ $currentRound ?? '?' }}</span>
+                                    <span class="text-success font-weight-bold" style="font-size: 0.9rem;"><i class="fas fa-clock mr-1"></i> Running for: {{ \Carbon\Carbon::parse($tournament->start_date)->diffForHumans(null, true) }}</span>
+                                </div>
                             @elseif($tournament->status === 'completed')
                                 <span class="badge badge-secondary p-2" style="font-size: 1rem;">Completed</span>
                             @endif

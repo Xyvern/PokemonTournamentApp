@@ -72,7 +72,11 @@
                                     @if($tournament->status === 'registration')
                                         <span class="badge badge-primary px-2 py-1">Registration</span>
                                     @elseif($tournament->status === 'active')
-                                        <span class="badge badge-success px-2 py-1">Live</span>
+                                        <span class="badge badge-success px-2 py-1 mb-1">Live</span>
+                                        <div class="mt-1 small text-success font-weight-bold">
+                                            <i class="fas fa-clock"></i> 
+                                            {{ \Carbon\Carbon::parse($tournament->start_date)->diffForHumans(null, true) }}
+                                        </div>
                                     @elseif($tournament->status === 'completed')
                                         <span class="badge badge-secondary px-2 py-1">Completed</span>
                                     @else
